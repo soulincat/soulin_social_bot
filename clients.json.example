@@ -1,0 +1,21 @@
+{
+  "clients": [
+    {
+      "name": "Client A",
+      "chat_id": "123456789",
+      "beehiiv_pub_id": "pub_xxx",
+      "instagram_id": "ig_xxx",
+      "instagram_token": "optional_override_token",
+      "vercel_project_id": "prj_xxx"
+    },
+    {
+      "name": "Client B",
+      "chat_id": "987654321",
+      "beehiiv_pub_id": "pub_yyy",
+      "instagram_id": "ig_yyy",
+      "vercel_project_id": "prj_yyy"
+    }
+  ]
+}
+
+
