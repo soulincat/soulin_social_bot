@@ -40,4 +40,7 @@ Thumbs.db
 # Client data
 clients.json
 
+# Metrics history
+metrics_history.json
+
 
