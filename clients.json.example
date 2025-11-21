@@ -1,21 +1,276 @@
 {
   "clients": [
     {
-      "name": "Client A",
-      "chat_id": "123456789",
-      "beehiiv_pub_id": "pub_xxx",
-      "instagram_id": "ig_xxx",
-      "instagram_token": "optional_override_token",
-      "vercel_project_id": "prj_xxx"
-    },
-    {
-      "name": "Client B",
-      "chat_id": "987654321",
-      "beehiiv_pub_id": "pub_yyy",
-      "instagram_id": "ig_yyy",
-      "vercel_project_id": "prj_yyy"
+      "client_id": "client_001",
+      "name": "My Account",
+      "chat_id": "8116874871",
+      "created_at": "2025-11-20",
+      "status": "active",
+      
+      "business": {
+        "type": "coach",
+        "description": "Business coaching",
+        "target_audience": "Entrepreneurs"
+      },
+      
+      "funnel_structure": {
+        "awareness": {
+          "channels": [
+            {
+              "name": "Instagram",
+              "type": "social",
+              "tracking": "auto",
+              "source": "instagram",
+              "metric_name": "ig_impressions",
+              "api_connection": {
+                "user_id": "your_instagram_user_id",
+                "access_token": "env_var"
+              }
+            },
+            {
+              "name": "LinkedIn",
+              "type": "social",
+              "tracking": "manual",
+              "metric_name": "linkedin_impressions"
+            },
+            {
+              "name": "Blog",
+              "type": "owned",
+              "tracking": "auto",
+              "source": "vercel",
+              "metric_name": "blog_visitors",
+              "api_connection": {
+                "project_id": "your_vercel_project_id",
+                "token": "env_var"
+              }
+            }
+          ]
+        },
+        
+        "capture": {
+          "platform": "Beehiiv",
+          "platform_id": "beehiiv",
+          "method": "Website popup",
+          "description": "Free ebook download",
+          "location": "Blog sidebar + exit popup",
+          "tracking": "auto",
+          "api_connection": {
+            "type": "beehiiv",
+            "api_key": "env_var",
+            "pub_id": "env_var"
+          }
+        },
+        
+        "nurture": {
+          "method": "Weekly newsletter",
+          "frequency": "Weekly",
+          "platform": "Beehiiv",
+          "content_types": ["Tips", "Case studies"],
+          "tracking": "auto"
+        },
+        
+        "conversion": {
+          "touchpoints": [
+            {
+              "name": "Discovery call",
+              "type": "call",
+              "tracking": "manual",
+              "metric_name": "calls_booked"
+            },
+            {
+              "name": "Free workshop",
+              "type": "event",
+              "tracking": "manual",
+              "metric_name": "workshop_attendees"
+            }
+          ]
+        },
+        
+        "products": [
+          {
+            "name": "1:1 coaching",
+            "price": 2000,
+            "currency": "USD",
+            "billing": "monthly",
+            "type": "service"
+          },
+          {
+            "name": "Group program",
+            "price": 500,
+            "currency": "USD",
+            "billing": "one-time",
+            "type": "program"
+          }
+        ]
+      },
+      
+      "report_settings": {
+        "frequency": "weekly",
+        "day": "Monday",
+        "time": "09:00",
+        "timezone": "Europe/Berlin",
+        "language": "en"
+      },
+      
+      "custom_benchmarks": {
+        "capture_rate": {"target": 4, "min": 2, "stretch": 6},
+        "open_rate": {"target": 40, "min": 35, "stretch": 50},
+        "inquiry_rate": {"target": 1.5, "min": 0.5, "stretch": 2.5},
+        "close_rate": {"target": 40, "min": 30, "stretch": 60}
+      },
+      
+      "onboarding": {
+        "completed": true,
+        "completed_at": "2025-11-20T10:30:00Z",
+        "template_used": "coach"
+      }
+      
+      "connected_accounts": {
+        "instagram": {
+          "connected": true,
+          "user_id": "your_instagram_user_id",
+          "access_token": "env_var",
+          "status": "active"
+        },
+        "email_platform": {
+          "type": "beehiiv",
+          "connected": true,
+          "api_key": "env_var",
+          "status": "active"
+        },
+        "website": {
+          "type": "vercel",
+          "connected": true,
+          "project_id": "your_vercel_project_id",
+          "token": "env_var",
+          "status": "active"
+        },
+        "linkedin": {
+          "connected": false,
+          "tracking": "manual",
+          "status": "manual_entry"
+        }
+      },
+      
+      "report_settings": {
+        "frequency": "weekly",
+        "day": "Monday",
+        "time": "10:00",
+        "timezone": "local",
+        "format": "full"
+      },
+
+      "projects": [
+        {
+          "project_id": "proj_newsletter",
+          "project_name": "Newsletter Growth",
+          "funnel_structure": {
+            "awareness": {
+              "channels": [
+                {
+                  "name": "Instagram",
+                  "type": "social",
+                  "tracking": "auto",
+                  "source": "instagram",
+                  "metric_name": "ig_impressions",
+                  "api_connection": {
+                    "user_id": "your_instagram_user_id",
+                    "access_token": "env_var"
+                  }
+                },
+                {
+                  "name": "LinkedIn",
+                  "type": "social",
+                  "tracking": "manual",
+                  "metric_name": "linkedin_impressions"
+                },
+                {
+                  "name": "Blog",
+                  "type": "owned",
+                  "tracking": "auto",
+                  "source": "vercel",
+                  "metric_name": "blog_visitors",
+                  "api_connection": {
+                    "project_id": "your_vercel_project_id",
+                    "token": "env_var"
+                  }
+                }
+              ]
+            },
+            "capture": {
+              "platform": "Beehiiv",
+              "platform_id": "beehiiv",
+              "method": "Website popup",
+              "description": "Free ebook download",
+              "location": "Blog sidebar + exit popup",
+              "tracking": "auto",
+              "api_connection": {
+                "type": "beehiiv",
+                "api_key": "env_var",
+                "pub_id": "env_var"
+              }
+            },
+            "nurture": {
+              "method": "Weekly newsletter",
+              "frequency": "Weekly",
+              "platform": "Beehiiv",
+              "content_types": ["Tips", "Case studies"],
+              "tracking": "auto"
+            },
+            "conversion": {
+              "touchpoints": [
+                {
+                  "name": "Discovery call",
+                  "type": "call",
+                  "booking_method": "Calendly",
+                  "tracking": "manual",
+                  "metric_name": "calls_booked"
+                }
+              ],
+              "tracking_method": "manual"
+            },
+            "products": [
+              {
+                "name": "Retainer",
+                "price": 1000,
+                "currency": "USD",
+                "billing": "monthly",
+                "type": "service"
+              }
+            ]
+          },
+          "report_settings": {
+            "frequency": "weekly",
+            "day": "Monday",
+            "time": "10:00",
+            "timezone": "local",
+            "format": "full"
+          }
+        }
+      ],
+      
+      "custom_benchmarks": {
+        "capture_rate": {
+          "target": 4,
+          "min_acceptable": 3,
+          "stretch_goal": 5
+        },
+        "open_rate": {
+          "target": 45,
+          "min_acceptable": 35,
+          "stretch_goal": 55
+        },
+        "inquiry_rate": {
+          "target": 1.5,
+          "min_acceptable": 1,
+          "stretch_goal": 2
+        },
+        "close_rate": {
+          "target": 50,
+          "min_acceptable": 30,
+          "stretch_goal": 70
+        }
+      }
     }
   ]
 }
-
-

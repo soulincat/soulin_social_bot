@@ -1,0 +1,35 @@
+{
+  "My Account": {
+    "beehiiv": {
+      "subscribers": 1100,
+      "open_rate": 48.2,
+      "click_rate": 8.3
+    },
+    "instagram": {
+      "impressions": 12336,
+      "reach": 7560
+    },
+    "web": {
+      "pageviews": 3260,
+      "visitors": 1853
+    },
+    "date": "2025-11-12T09:00:00"
+  },
+  "Client A": {
+    "beehiiv": {
+      "subscribers": 2500,
+      "open_rate": 52.1,
+      "click_rate": 12.5
+    },
+    "instagram": {
+      "impressions": 45000,
+      "reach": 28000
+    },
+    "web": {
+      "pageviews": 12000,
+      "visitors": 8500
+    },
+    "date": "2025-11-12T09:00:00"
+  }
+}
+

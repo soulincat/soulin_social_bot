@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funnel Dashboard - Sample</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="web/styles/dashboard.css">
+</head>
+<body>
+    <canvas id="noise-canvas"></canvas>
+    <main>
+        <header class="app-header">
+            <div class="brand-mark">
+                <div class="logo-glyph">
+                    <img src="web/assets/logo.png" alt="Soul in Social" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
+                <div>
+                    <p class="pill-badge">Soul in Social · Auto insights</p>
+                    <h1>Soul in Social</h1>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button class="ghost-button" data-modal-target="#group-modal">Group Deep Dive</button>
+                <button class="glass-button tertiary" data-modal-target="#playbook-modal">Launch Playbook</button>
+                <button class="glass-button">Download Weekly PDF</button>
+            </div>
+        </header>
+
+        <section class="hero glass-card">
+            <div>
+                <p class="date-chip">Nov 18-24, 2025</p>
+            <h1>weekly funnel dashboard</h1>
+                <p style="color: #a8b2d1; margin-top: 0.35rem;">Auto-generated model for Soul in Social</p>
+            </div>
+            <div class="mini-boxes-row">
+                <div class="mini-box">
+                    <div class="mini-box-label">Fans</div>
+                    <div class="mini-box-value">$12,450</div>
+                    <div class="mini-box-subtitle">Monthly Total</div>
+                    <div class="mini-box-trend trend-up">+18.5% MoM</div>
+                </div>
+                <div class="mini-box">
+                    <div class="mini-box-label">Earn</div>
+                    <div class="mini-box-value">$8,920</div>
+                    <div class="mini-box-subtitle">Monthly Total</div>
+                    <div class="mini-box-trend trend-up">+22.3% MoM</div>
+                </div>
+            </div>
+            <span class="glow-ring"></span>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="glass-card stat-card">
+                <h3>Blog Visitors</h3>
+                <p class="stat-value">1,234 <span class="stat-trend trend-up">+12%</span></p>
+                <p style="color: #a8b2d1;">Weekly reach</p>
+            </article>
+            <article class="glass-card stat-card">
+                <h3>New Subscribers</h3>
+                <p class="stat-value">23 <span class="stat-trend trend-down">-2</span></p>
+                <p style="color: #a8b2d1;">Blog → Email conversion 1.9%</p>
+            </article>
+            <article class="glass-card stat-card">
+                <h3>Open Rate</h3>
+                <p class="stat-value">45.2% <span class="stat-trend trend-up">+5%</span></p>
+                <p style="color: #a8b2d1;">Newsletter engagement</p>
+            </article>
+            <article class="glass-card stat-card">
+                <h3>Inquiries → Clients</h3>
+                <p class="stat-value">50% <span class="stat-trend trend-up">Best-in-class</span></p>
+                <p style="color: #a8b2d1;">Closing strength</p>
+            </article>
+        </section>
+
+        <section class="glass-card glass-panel">
+            <div class="panel-title">Funnel Flow Overview</div>
+            <div class="flow-map">
+                <div class="flow-step">
+                    <div class="flow-number">1,234</div>
+                    <div class="flow-label">Blog Visitors</div>
+                    <div class="flow-rate">1.9% →</div>
+                </div>
+                <div class="flow-connector">↓</div>
+                <div class="flow-step">
+                    <div class="flow-number">23</div>
+                    <div class="flow-label">Email Signups</div>
+                    <div class="flow-rate">0.4% →</div>
+                </div>
+                <div class="flow-connector">↓</div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-label">Inquiries</div>
+                    <div class="flow-rate">50% →</div>
+                </div>
+                <div class="flow-connector">↓</div>
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-label">New Client</div>
+                    <div class="flow-rate">100%</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="stage-grid">
+            <article class="glass-card stage-card">
+                <div class="stage-icon">🎯</div>
+                <h3>Awareness</h3>
+                <div class="metric-line"><strong>Blog Visitors</strong><span>1,234</span></div>
+                <div class="metric-line"><strong>Instagram Impressions</strong><span>5,678</span></div>
+                <div class="metric-line"><strong>LinkedIn Impressions</strong><span>890</span></div>
+                <span class="stage-status status-good">Above Target</span>
+            </article>
+            <article class="glass-card stage-card">
+                <div class="stage-icon">🧲</div>
+                <h3>Lead Capture</h3>
+                <div class="metric-line"><strong>Subscribers</strong><span>23 new</span></div>
+                <div class="metric-line"><strong>Total List</strong><span>456</span></div>
+                <div class="metric-line"><strong>Blog → Email</strong><span>1.9%</span></div>
+                <span class="stage-status status-risk">Needs Lift</span>
+            </article>
+            <article class="glass-card stage-card">
+                <div class="stage-icon">💌</div>
+                <h3>Nurture</h3>
+                <div class="metric-line"><strong>Open Rate</strong><span>45.2%</span></div>
+                <div class="metric-line"><strong>Click Rate</strong><span>8.3%</span></div>
+                <span class="stage-status status-good">Top tier</span>
+            </article>
+            <article class="glass-card stage-card">
+                <div class="stage-icon">💰</div>
+                <h3>Conversion</h3>
+                <div class="metric-line"><strong>Inquiries</strong><span>2</span></div>
+                <div class="metric-line"><strong>Calls Booked</strong><span>1</span></div>
+                <div class="metric-line"><strong>Close Rate</strong><span>100%</span></div>
+                <span class="stage-status status-watch">Low volume</span>
+            </article>
+        </section>
+
+        <section class="glass-card glass-panel">
+            <div class="panel-title">Community Group Pulse</div>
+            <p class="panel-subtitle">Glassmorphism groups primed for web experiences</p>
+            <div class="group-grid">
+                <article class="glass-group">
+                    <div class="group-header">
+                        <span>Lead Magnet Lab</span>
+                        <span class="micro-tag">Top focus</span>
+                    </div>
+                    <div class="group-meta">
+                        <span>178 members</span>
+                        <span>8 pods live</span>
+                    </div>
+                    <div class="group-progress"><span style="width: 68%;"></span></div>
+                    <p class="group-status">68% of the 30-day challenge complete.</p>
+                    <div class="popup-actions">
+                        <button class="glass-button secondary" data-modal-target="#group-modal">See stack</button>
+                        <button class="ghost-button" data-modal-target="#bottleneck-modal">Bottleneck math</button>
+                    </div>
+                </article>
+                <article class="glass-group">
+                    <div class="group-header">
+                        <span>Unicorn Clients</span>
+                        <span class="micro-tag">Private</span>
+                    </div>
+                    <div class="group-meta">
+                        <span>64 founders</span>
+                        <span>2 drops/mo</span>
+                    </div>
+                    <div class="group-progress"><span style="width: 52%;"></span></div>
+                    <p class="group-status">Need popup follow-up to lift application flow.</p>
+                    <div class="popup-actions">
+                        <button class="glass-button secondary" data-modal-target="#playbook-modal">Open playbook</button>
+                        <button class="ghost-button" data-modal-target="#milestone-modal">Celebrate</button>
+                    </div>
+                </article>
+                <article class="glass-group">
+                    <div class="group-header">
+                        <span>MiniMind Circle</span>
+                        <span class="micro-tag">Beta</span>
+                    </div>
+                    <div class="group-meta">
+                        <span>32 clients</span>
+                        <span>Next cohort Dec 2</span>
+                    </div>
+                    <div class="group-progress"><span style="width: 88%;"></span></div>
+                    <p class="group-status">Glassmorphism popup scheduled for waitlist.</p>
+                    <div class="popup-actions">
+                        <button class="glass-button secondary" data-modal-target="#popup-preview-modal">Preview popup</button>
+                        <button class="ghost-button" data-modal-target="#milestone-modal">Share milestone</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="glass-card grouped-insights">
+            <div class="insight-bubble">
+                <strong>🎯 Current Bottleneck</strong>
+                Lead capture is 1.9% vs target 4%. Double signup rate to push 26 more leads per week.
+            </div>
+            <div class="insight-bubble">
+                <strong>🔮 Opportunity</strong>
+                Add ebook popup + case study drip to capitalize on high nurture trust and elite closing.
+            </div>
+            <div class="insight-bubble">
+                <strong>🧊 Drop-Off Map</strong>
+                <span class="dropoff-chip chip-red">Capture 1.9%</span>
+                <span class="dropoff-chip chip-green">Open 45.2%</span>
+                <span class="dropoff-chip chip-green">Close 50%</span>
+            </div>
+        </section>
+
+        <section class="glass-card glass-panel">
+            <div class="panel-title">Glassmorphism Popup Stack</div>
+            <p class="panel-subtitle">Web-ready modals and inline popups</p>
+            <div class="popup-stack">
+                <article class="popup-card">
+                    <strong>🧊 Frosted Ebook Popup</strong>
+                    <p class="popup-meta">Triggers on exit intent · adds blur overlay with frosted CTA.</p>
+                    <div class="popup-actions">
+                        <button class="glass-button secondary" data-modal-target="#popup-preview-modal">Preview</button>
+                        <button class="ghost-button">Add to site</button>
+                    </div>
+                </article>
+                <article class="popup-card">
+                    <strong>💬 Group Waitlist Bubble</strong>
+                    <p class="popup-meta">Bottom-right chip that expands into a glass card for MiniMind.</p>
+                    <div class="popup-actions">
+                        <button class="glass-button secondary" data-modal-target="#group-modal">View flow</button>
+                        <button class="ghost-button">Copy embed</button>
+                    </div>
+                </article>
+                <article class="popup-card">
+                    <strong>🎉 Milestone Modal</strong>
+                    <p class="popup-meta">Auto fires when list hits 500; includes confetti gradient.</p>
+                    <div class="popup-actions">
+                        <button class="glass-button secondary" data-modal-target="#milestone-modal">Open</button>
+                        <button class="ghost-button">Schedule</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="glass-card recommendations">
+            <div class="panel-title">This Week's Moves</div>
+            <div class="recommendation-item">
+                <h4>Priority 1 · Launch Ebook Popup</h4>
+                <p>Capture the 98% of visitors currently bouncing without subscribing.</p>
+                <p class="recommendation-meta">Impact: +26 subscribers/week · +$700-1K MRR</p>
+            </div>
+            <div class="recommendation-item">
+                <h4>Priority 2 · Case Study Drip</h4>
+                <p>Inject proof stories into your nurture to lift email → inquiry rate.</p>
+                <p class="recommendation-meta">Impact: 0.4% → 1% inquiries · +2 calls/week</p>
+            </div>
+        </section>
+
+        <section class="glass-card glass-panel">
+            <div class="panel-title">Growth Trajectory</div>
+            <div class="metric-line"><strong>Current Path</strong><span>~8 inquiries · ~2 clients</span></div>
+            <div class="metric-line"><strong>Target Path</strong><span>~20 inquiries · ~5 clients</span></div>
+            <p style="color:#a8b2d1;">Fixing the bottleneck adds +$2-3K MRR.</p>
+        </section>
+
+        <footer class="footer">
+            Auto-generated 🤖 · Last updated Nov 19, 2025
+        </footer>
+    </main>
+
+    <div id="bottleneck-modal" class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="bottleneck-title">
+        <article class="glass-card modal-content">
+            <button class="modal-close" aria-label="Close popup" data-dismiss>✕</button>
+            <h3 id="bottleneck-title">🎯 Bottleneck Math</h3>
+            <p><strong>Weakest Link:</strong> Lead capture (1.9%)</p>
+            <p>Current: 1,234 visitors × 1.9% = 23 subscribers/week</p>
+            <p>Target: 1,234 visitors × 4% = 49 subscribers/week</p>
+            <p><strong>Impact:</strong> +26 per week · +104 per month → +1-2 clients</p>
+        </article>
+        </div>
+        
+    <div id="milestone-modal" class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="milestone-title">
+        <article class="glass-card modal-content">
+            <button class="modal-close" aria-label="Close popup" data-dismiss>✕</button>
+            <h3 id="milestone-title">🎉 Milestone Unlocked</h3>
+            <p>You crossed 450 subscribers — that's 4-9 future clients in pipe.</p>
+            <p>Next target: 500 subscribers and consistent 5 weekly inquiries.</p>
+        </article>
+    </div>
+
+    <div id="group-modal" class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="group-title">
+        <article class="glass-card modal-content">
+            <button class="modal-close" aria-label="Close popup" data-dismiss>✕</button>
+            <h3 id="group-title">👥 Group Stack Details</h3>
+            <p>Lead Magnet Lab is running 8 pods with average 78% completion.</p>
+            <div class="modal-metrics">
+                <div class="modal-pill">
+                    <strong>178</strong>
+                    <p style="margin:0;color:#a8b2d1;">members</p>
+                </div>
+                <div class="modal-pill">
+                    <strong>26%</strong>
+                    <p style="margin:0;color:#a8b2d1;">opt-in via popup</p>
+                </div>
+                <div class="modal-pill">
+                    <strong>12</strong>
+                    <p style="margin:0;color:#a8b2d1;">weekly intros</p>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <div id="popup-preview-modal" class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+        <article class="glass-card modal-content">
+            <button class="modal-close" aria-label="Close popup" data-dismiss>✕</button>
+            <h3 id="popup-title">🧊 Glass Popup Preview</h3>
+            <p>This popup mirrors the soulin-paper-cut frosted layers with a glow ring and CTA stack.</p>
+            <ul style="color:#a8b2d1; padding-left:1.2rem; margin:0;">
+                <li>Entry animation: slide + blur reveal</li>
+                <li>Displays after 15s on page or exit intent</li>
+                <li>Ships with light/dark gradients</li>
+            </ul>
+        </article>
+    </div>
+
+    <div id="playbook-modal" class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="playbook-title">
+        <article class="glass-card modal-content">
+            <button class="modal-close" aria-label="Close popup" data-dismiss>✕</button>
+            <h3 id="playbook-title">📘 Popup Playbook</h3>
+            <p>Attach the popup snippet to your site and call <code>window.soulinGlass.show()</code> when ready.</p>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <strong>Step 1</strong>
+                    <span>Drop script in <code>&lt;head&gt;</code></span>
+                </div>
+                <div class="timeline-item">
+                    <strong>Step 2</strong>
+                    <span>Configure copy + gradient</span>
+                </div>
+                <div class="timeline-item">
+                    <strong>Step 3</strong>
+                    <span>Trigger on scroll, time, or intent</span>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <script>
+        // Generate noise texture
+        (function() {
+            const canvas = document.getElementById('noise-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            let animationFrame;
+            
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            function generateNoise() {
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const value = Math.random() * 255;
+                    data[i] = value;     // R
+                    data[i + 1] = value; // G
+                    data[i + 2] = value; // B
+                    data[i + 3] = 15;   // Alpha (low opacity for subtle noise)
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+            }
+            
+            function animateNoise() {
+                generateNoise();
+                animationFrame = requestAnimationFrame(animateNoise);
+            }
+            
+            resizeCanvas();
+            generateNoise();
+            animateNoise();
+            
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                generateNoise();
+            });
+        })();
+
+        // Modal functionality
+        const toggles = document.querySelectorAll('[data-modal-target]');
+        const modals = document.querySelectorAll('.glass-modal');
+
+        toggles.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.querySelector(btn.dataset.modalTarget);
+                target?.classList.add('is-visible');
+            });
+        });
+
+        modals.forEach(modal => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal || event.target.hasAttribute('data-dismiss')) {
+                    modal.classList.remove('is-visible');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                modals.forEach(modal => modal.classList.remove('is-visible'));
+            }
+        });
+    </script>
+</body>
+</html>

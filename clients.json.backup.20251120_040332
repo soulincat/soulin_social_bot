@@ -1,0 +1,11 @@
+{
+  "clients": [
+    {
+      "name": "My Account",
+      "chat_id": "8116874871",
+      "beehiiv_pub_id": "your_beehiiv_pub_id",
+      "instagram_id": "your_instagram_user_id",
+      "vercel_project_id": "your_vercel_project_id"
+    }
+  ]
+}
