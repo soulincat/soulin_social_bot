@@ -180,115 +180,13 @@ def create_dashboard_image():
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
     
-    # Center text in container (at top)
+    # Center text in container (vertically and horizontally centered)
     text_x = container_x + (container_size - text_width) // 2
-    text_y = container_y + int(container_size * 0.15)  # Position near top
+    text_y = container_y + (container_size - text_height) // 2  # Vertically centered
     
     # Draw text (text-primary: #f8fafc)
     text_color = (248, 250, 252, 255)  # #f8fafc
     draw.text((text_x, text_y), text, font=font, fill=text_color)
-    
-    # Add mini-boxes for "Fans" and "Earn" below the text
-    # Mini-box styling: glassmorphism with rgba(255, 255, 255, 0.08), border-radius: 16px
-    mini_box_width = int(container_size * 0.42)  # Each box is about 42% of container width
-    mini_box_height = 120
-    mini_box_spacing = int(container_size * 0.06)  # 6% spacing between boxes
-    mini_box_y = text_y + text_height + 40  # Position below text
-    
-    # Calculate positions for two boxes side by side
-    total_boxes_width = (mini_box_width * 2) + mini_box_spacing
-    boxes_start_x = container_x + (container_size - total_boxes_width) // 2
-    
-    # Create mini-boxes
-    for i, (label, value, subtitle, trend) in enumerate([
-        ("Fans", "$12,450", "Monthly Total", "+18.5% MoM"),
-        ("Earn", "$8,920", "Monthly Total", "+22.3% MoM")
-    ]):
-        box_x = boxes_start_x + i * (mini_box_width + mini_box_spacing)
-        box_y = mini_box_y
-        
-        # Create mini-box with glassmorphism
-        mini_box_overlay = Image.new('RGBA', (mini_box_width, mini_box_height), (255, 255, 255, int(255 * 0.08)))
-        mini_box_blurred = base.crop((box_x, box_y, box_x + mini_box_width, box_y + mini_box_height))
-        mini_box_blurred = mini_box_blurred.filter(ImageFilter.GaussianBlur(radius=6))
-        
-        # Create mini-box mask with rounded corners (16px radius)
-        mini_mask = Image.new('L', (mini_box_width, mini_box_height), 0)
-        mini_mask_draw = ImageDraw.Draw(mini_mask)
-        mini_mask_draw.rounded_rectangle(
-            [(0, 0), (mini_box_width, mini_box_height)],
-            radius=16,
-            fill=255
-        )
-        
-        # Composite mini-box
-        mini_box_composite = Image.new('RGBA', (mini_box_width, mini_box_height), (0, 0, 0, 0))
-        mini_box_composite = Image.alpha_composite(mini_box_composite, mini_box_blurred)
-        mini_box_composite = Image.alpha_composite(mini_box_composite, mini_box_overlay)
-        mini_box_composite.putalpha(mini_mask)
-        
-        # Paste mini-box
-        base.paste(mini_box_composite, (box_x, box_y), mini_box_composite)
-        
-        # Draw border (rgba(255, 255, 255, 0.15))
-        mini_draw = ImageDraw.Draw(base)
-        mini_draw.rounded_rectangle(
-            [box_x, box_y, box_x + mini_box_width, box_y + mini_box_height],
-            radius=16,
-            outline=(255, 255, 255, int(255 * 0.15)),
-            width=1
-        )
-        
-        # Add text content to mini-box
-        # Label (smaller font)
-        label_font_size = 14
-        try:
-            label_font = ImageFont.truetype(inter_path, label_font_size) if os.path.exists(inter_path) else font
-        except:
-            label_font = ImageFont.load_default()
-        
-        label_bbox = mini_draw.textbbox((0, 0), label, font=label_font)
-        label_text_width = label_bbox[2] - label_bbox[0]
-        label_x = box_x + 16  # Padding
-        label_y = box_y + 16
-        mini_draw.text((label_x, label_y), label, font=label_font, fill=(168, 178, 209, 255))  # #a8b2d1 (text-muted)
-        
-        # Value (larger, bold)
-        value_font_size = 28
-        try:
-            value_font = ImageFont.truetype(inter_path, value_font_size) if os.path.exists(inter_path) else font
-        except:
-            value_font = ImageFont.load_default()
-        
-        value_bbox = mini_draw.textbbox((0, 0), value, font=value_font)
-        value_text_width = value_bbox[2] - value_bbox[0]
-        value_x = box_x + 16
-        value_y = label_y + 24
-        mini_draw.text((value_x, value_y), value, font=value_font, fill=text_color)
-        
-        # Subtitle
-        subtitle_font_size = 12
-        try:
-            subtitle_font = ImageFont.truetype(inter_path, subtitle_font_size) if os.path.exists(inter_path) else font
-        except:
-            subtitle_font = ImageFont.load_default()
-        
-        subtitle_x = box_x + 16
-        subtitle_y = value_y + 28
-        mini_draw.text((subtitle_x, subtitle_y), subtitle, font=subtitle_font, fill=(168, 178, 209, 255))
-        
-        # Trend (green for up)
-        trend_font_size = 12
-        try:
-            trend_font = ImageFont.truetype(inter_path, trend_font_size) if os.path.exists(inter_path) else font
-        except:
-            trend_font = ImageFont.load_default()
-        
-        trend_bbox = mini_draw.textbbox((0, 0), trend, font=trend_font)
-        trend_text_width = trend_bbox[2] - trend_bbox[0]
-        trend_x = box_x + mini_box_width - trend_text_width - 16
-        trend_y = subtitle_y
-        mini_draw.text((trend_x, trend_y), trend, font=trend_font, fill=(34, 197, 94, 255))  # #22c55e (success green)
     
     # Convert back to RGB for JPEG
     final_image = base.convert('RGB')
