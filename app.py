@@ -1,24 +1,27 @@
 """
 Simple Flask web server to serve dashboard_sample.html as homepage
 """
-from flask import Flask, send_from_directory, send_file
+from flask import Flask, send_file, send_from_directory
 import os
 
-app = Flask(__name__, static_folder='web', static_url_path='/web')
+# Set up Flask with static files
+# Flask will automatically serve files from 'web' folder at '/web' URL
+app = Flask(__name__, 
+            static_folder='web', 
+            static_url_path='/web')
 
 @app.route('/')
 def index():
     """Serve dashboard_sample.html as homepage"""
-    return send_file('dashboard_sample.html')
-
-@app.route('/web/<path:path>')
-def serve_web(path):
-    """Serve static files from web directory"""
-    return send_from_directory('web', path)
+    try:
+        return send_file('dashboard_sample.html')
+    except FileNotFoundError:
+        return "Error: dashboard_sample.html not found", 404
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 3000))
     print(f"🌐 Starting web server on http://localhost:{port}")
     print(f"📊 Dashboard available at http://localhost:{port}/")
-    app.run(host='0.0.0.0', port=port, debug=True)
+    print(f"📁 Static files at http://localhost:{port}/web/")
+    app.run(host='127.0.0.1', port=port, debug=True)
 
