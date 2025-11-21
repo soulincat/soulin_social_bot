@@ -18,9 +18,8 @@ def index():
     except FileNotFoundError:
         return "Error: dashboard_sample.html not found", 404
 
-# Vercel expects a handler function
-def handler(request):
-    return app(request.environ, lambda status, headers: None)
+# Export app for Vercel
+# Vercel's @vercel/python will automatically detect Flask apps
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 3000))
