@@ -18,6 +18,10 @@ def index():
     except FileNotFoundError:
         return "Error: dashboard_sample.html not found", 404
 
+# Vercel expects a handler function
+def handler(request):
+    return app(request.environ, lambda status, headers: None)
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 3000))
     print(f"🌐 Starting web server on http://localhost:{port}")
