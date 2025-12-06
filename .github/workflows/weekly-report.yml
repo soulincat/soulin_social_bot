@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,16 +24,42 @@ jobs:
       - name: Create .env file
         run: |
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-          echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
           echo "BEEHIIV_API_KEY=${{ secrets.BEEHIIV_API_KEY }}" >> .env
           echo "INSTAGRAM_ACCESS_TOKEN=${{ secrets.INSTAGRAM_ACCESS_TOKEN }}" >> .env
           echo "VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }}" >> .env
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       
       - name: Create clients.json
         run: |
-          echo '${{ secrets.CLIENTS_JSON }}' > clients.json
+          if [ -n "${{ secrets.CLIENTS_JSON }}" ]; then
+            echo '${{ secrets.CLIENTS_JSON }}' > clients.json
+          else
+            echo "⚠️ Warning: CLIENTS_JSON secret not set"
+            # Create a minimal clients.json from example if it exists
+            if [ -f "clients.json.example" ]; then
+              cp clients.json.example clients.json
+            fi
+          fi
       
-      - name: Send report
-        run: python bot.py
+      - name: Send weekly reports
+        run: |
+          echo "📊 Starting weekly report generation..."
+          python bot.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      
+      - name: Report status
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ Weekly reports sent successfully"
+          else
+            echo "❌ Error sending weekly reports"
+            exit 1
+          fi
 
 
