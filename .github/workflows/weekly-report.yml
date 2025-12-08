@@ -57,15 +57,34 @@ jobs:
           
           try:
               # Validate JSON first
-              json.loads(clients_json)
+              parsed = json.loads(clients_json)
+              
+              # Additional validation - check structure
+              if 'clients' not in parsed:
+                  print("❌ CLIENTS_JSON missing 'clients' key")
+                  sys.exit(1)
+              
+              if not isinstance(parsed['clients'], list):
+                  print("❌ CLIENTS_JSON 'clients' must be an array")
+                  sys.exit(1)
+              
+              if len(parsed['clients']) == 0:
+                  print("⚠️ Warning: CLIENTS_JSON has no clients")
               
               # Write to file
               with open('clients.json', 'w') as f:
                   f.write(clients_json)
               
               print("✅ clients.json created successfully")
+              print(f"✅ Found {len(parsed['clients'])} client(s)")
           except json.JSONDecodeError as e:
-              print(f"❌ CLIENTS_JSON is not valid JSON: {e}")
+              print(f"❌ CLIENTS_JSON is not valid JSON!")
+              print(f"   Error: {e}")
+              print(f"   Line: {e.lineno}, Column: {e.colno}")
+              print("")
+              print("💡 Fix: Go to Settings → Secrets → Actions")
+              print("   Delete the CLIENTS_JSON secret and add it again")
+              print("   Make sure you copy the ENTIRE clients.json file content")
               sys.exit(1)
           except Exception as e:
               print(f"❌ Error creating clients.json: {e}")
