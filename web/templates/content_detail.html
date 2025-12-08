@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Post - Social Funnel Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/web/styles/dashboard.css">
+    <style>
+        .content-section {
+            margin-bottom: 2rem;
+        }
+        .content-preview {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .check-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            margin: 0.25rem;
+        }
+        .check-pass {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .check-fail {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+        .derivative-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="noise-canvas"></canvas>
+    <main>
+        <header class="app-header">
+            <div class="brand-mark">
+                <div class="logo-glyph">☾</div>
+                <div>
+                    <p class="pill-badge">Soul in Social</p>
+                    <h1 id="post-title">Loading...</h1>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <a href="/" class="ghost-button">Dashboard</a>
+                <a href="/content" class="ghost-button">Content</a>
+                <a href="/content/create" class="glass-button">+ New Post</a>
+                <a href="/settings" class="ghost-button">Settings</a>
+            </div>
+        </header>
+
+        <div id="post-content" style="max-width: 900px; margin: 0 auto;">
+            <!-- Post will be loaded here -->
+        </div>
+    </main>
+
+    <script>
+        const postId = window.location.pathname.split('/').pop();
+        
+        async function loadPost() {
+            try {
+                const response = await fetch(`/api/content/posts/${postId}`);
+                const post = await response.json();
+                
+                document.getElementById('post-title').textContent = post.center_post?.title || post.raw_idea?.substring(0, 50) || 'Untitled';
+                
+                const contentEl = document.getElementById('post-content');
+                const checks = post.center_post?.checks || {};
+                
+                contentEl.innerHTML = `
+                    <section class="glass-card content-section">
+                        <div class="panel-title">Center Post</div>
+                        ${post.center_post ? `
+                            <h2>${post.center_post.title}</h2>
+                            <div class="content-preview">${post.center_post.content}</div>
+                            <div style="margin-top: 1rem;">
+                                <strong>Validation Checks:</strong><br>
+                                ${Object.entries(checks).map(([key, value]) => `
+                                    <span class="check-badge ${value ? 'check-pass' : 'check-fail'}">
+                                        ${key}: ${value ? '✓' : '✗'}
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <p style="color: #a8b2d1; margin-top: 0.5rem;">
+                                ${post.center_post.word_count} words
+                            </p>
+                        ` : `
+                            <p style="color: #a8b2d1;">Draft - not yet expanded</p>
+                            <div class="action-buttons">
+                                <button class="glass-button" onclick="expandPost()">Expand with AI</button>
+                            </div>
+                        `}
+                    </section>
+                    
+                    ${post.archive_version ? `
+                        <section class="glass-card content-section">
+                            <div class="panel-title">Archive Version (Chapter ${post.archive_version.chapter_number})</div>
+                            <div class="content-preview">${post.archive_version.content}</div>
+                        </section>
+                    ` : `
+                        <section class="glass-card content-section">
+                            <div class="panel-title">Archive Version</div>
+                            <p style="color: #a8b2d1;">Not generated yet</p>
+                            <div class="action-buttons">
+                                <button class="glass-button" onclick="generateBranches()">Generate Archive & Blog</button>
+                            </div>
+                        </section>
+                    `}
+                    
+                    ${post.blog_version ? `
+                        <section class="glass-card content-section">
+                            <div class="panel-title">Blog Version</div>
+                            <div class="content-preview">${post.blog_version.content}</div>
+                        </section>
+                    ` : ''}
+                    
+                    <section class="glass-card content-section">
+                        <div class="panel-title">Derivatives</div>
+                        <div id="derivatives-list">
+                            <p style="color: #a8b2d1;">Loading derivatives...</p>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="glass-button" onclick="generateDerivatives()">Generate All Derivatives</button>
+                        </div>
+                    </section>
+                `;
+                
+                loadDerivatives();
+            } catch (error) {
+                document.getElementById('post-content').innerHTML = `
+                    <section class="glass-card">
+                        <p style="color: #f87171;">Error loading post: ${error.message}</p>
+                    </section>
+                `;
+            }
+        }
+        
+        async function loadDerivatives() {
+            try {
+                const response = await fetch(`/api/content/derivatives?post_id=${postId}`);
+                const data = await response.json();
+                const derivatives = data.derivatives || [];
+                
+                const listEl = document.getElementById('derivatives-list');
+                if (derivatives.length === 0) {
+                    listEl.innerHTML = '<p style="color: #a8b2d1;">No derivatives yet</p>';
+                    return;
+                }
+                
+                listEl.innerHTML = derivatives.map(deriv => `
+                    <div class="derivative-item">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <strong>${deriv.type.replace('_', ' ').toUpperCase()}</strong>
+                                <p style="color: #a8b2d1; margin: 0.5rem 0; font-size: 0.85rem;">
+                                    Status: ${deriv.metadata?.status || 'unknown'}
+                                </p>
+                                ${deriv.scheduled_for ? `
+                                    <p style="color: #a8b2d1; font-size: 0.75rem;">
+                                        Scheduled: ${new Date(deriv.scheduled_for).toLocaleString()}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="content-preview" style="max-height: 150px; margin-top: 0.5rem;">
+                            ${deriv.content?.substring(0, 200)}${deriv.content?.length > 200 ? '...' : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading derivatives:', error);
+            }
+        }
+        
+        async function expandPost() {
+            // TODO: Implement expand endpoint
+            alert('Expand functionality coming soon');
+        }
+        
+        async function generateBranches() {
+            try {
+                const response = await fetch(`/api/content/posts/${postId}/branch`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('Branches generated! Refreshing...');
+                    loadPost();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        async function generateDerivatives() {
+            try {
+                const response = await fetch(`/api/content/posts/${postId}/generate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({include_podcast: false})
+                });
+                if (response.ok) {
+                    alert('Derivatives generated! Refreshing...');
+                    loadPost();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        loadPost();
+        
+        // Noise canvas
+        (function() {
+            const canvas = document.getElementById('noise-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            function generateNoise() {
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const value = Math.random() * 255;
+                    data[i] = value;
+                    data[i + 1] = value;
+                    data[i + 2] = value;
+                    data[i + 3] = 15;
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+            resizeCanvas();
+            generateNoise();
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                generateNoise();
+            });
+        })();
+    </script>
+</body>
+</html>
+

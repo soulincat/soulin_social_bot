@@ -25,6 +25,10 @@ from metrics_collector import (
 )
 from report_formatter_dynamic import generate_full_report
 from utils.projects import extract_projects
+from content.center_post import create_center_post, list_posts, get_post
+from content.branch_generator import generate_branches
+from content.derivative_generator import generate_derivatives
+from content.pillar_tracker import get_pillars, get_pillar_performance
 
 load_dotenv()
 
@@ -242,11 +246,179 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/metrics` or `/funnel` - Detailed report with insights\n"
         "• `/update <metric> <value>` - Update manual metrics\n"
         "• `/status` - Your current setup\n"
+        "• `/content create <idea>` - Create content post\n"
+        "• `/content list` - List all posts\n"
+        "• `/content pillars` - Show pillar performance\n"
         "• `/help` - All commands\n"
         "• `/start` - Show this help message\n\n"
         "The bot sends detailed weekly reports automatically based on your settings.",
         parse_mode='Markdown'
     )
+
+async def content_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /content command with subcommands"""
+    if not context.args:
+        await update.message.reply_text(
+            "📝 **Content Commands**\n\n"
+            "• `/content create <idea>` - Create new post\n"
+            "• `/content list` - List all posts\n"
+            "• `/content pillars` - Show pillar performance",
+            parse_mode='Markdown'
+        )
+        return
+    
+    subcommand = context.args[0].lower()
+    
+    if subcommand == 'create':
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                "❌ Usage: `/content create <your idea here>`\n\n"
+                "Example: `/content create How to build a content system that scales`",
+                parse_mode='Markdown'
+            )
+            return
+        
+        idea = ' '.join(context.args[1:])
+        chat_id = str(update.effective_chat.id)
+        
+        # Find client by chat_id
+        with open('clients.json', 'r') as f:
+            clients_data = json.load(f)
+        
+        client = None
+        for c in clients_data['clients']:
+            if str(c.get('chat_id')) == chat_id:
+                client = c
+                break
+        
+        if not client:
+            await update.message.reply_text("❌ Client not found. Please set up your client in clients.json")
+            return
+        
+        try:
+            await update.message.reply_text("⏳ Creating center post with AI... This may take a moment.")
+            post = create_center_post(
+                client_id=client['client_id'],
+                raw_idea=idea,
+                auto_expand=True
+            )
+            
+            title = post.get('center_post', {}).get('title', 'Untitled')
+            checks = post.get('center_post', {}).get('checks', {})
+            passed = sum(1 for v in checks.values() if v)
+            total = len(checks)
+            
+            message = f"✅ **Post Created!**\n\n"
+            message += f"**{title}**\n\n"
+            message += f"Validation: {passed}/{total} checks passed\n"
+            message += f"Word count: {post.get('center_post', {}).get('word_count', 0)}\n\n"
+            message += f"Post ID: `{post['id']}`\n\n"
+            message += f"View on web: {WEB_DASHBOARD_URL}/content/{post['id']}"
+            
+            await update.message.reply_text(message, parse_mode='Markdown')
+            return
+        
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error creating post: {str(e)}")
+            return
+    
+    elif subcommand == 'list':
+        chat_id = str(update.effective_chat.id)
+        
+        # Find client by chat_id
+        with open('clients.json', 'r') as f:
+            clients_data = json.load(f)
+        
+        client = None
+        for c in clients_data['clients']:
+            if str(c.get('chat_id')) == chat_id:
+                client = c
+                break
+        
+        if not client:
+            await update.message.reply_text("❌ Client not found")
+            return
+        
+        try:
+            posts = list_posts(client_id=client['client_id'])
+            
+            if not posts:
+                await update.message.reply_text("📝 No posts yet. Use `/content create <idea>` to create one.", parse_mode='Markdown')
+                return
+            
+            message = f"📝 **Your Content Posts** ({len(posts)})\n\n"
+            
+            for post in posts[:10]:  # Show first 10
+                title = post.get('center_post', {}).get('title') or post.get('raw_idea', 'Untitled')[:50]
+                status = post.get('status', 'draft')
+                message += f"• {title}\n"
+                message += f"  Status: {status} | ID: `{post['id']}`\n\n"
+            
+            if len(posts) > 10:
+                message += f"... and {len(posts) - 10} more\n\n"
+            
+            message += f"View all: {WEB_DASHBOARD_URL}/content"
+            
+            await update.message.reply_text(message, parse_mode='Markdown')
+            return
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+            return
+    
+    elif subcommand == 'pillars':
+        chat_id = str(update.effective_chat.id)
+        
+        # Find client by chat_id
+        with open('clients.json', 'r') as f:
+            clients_data = json.load(f)
+        
+        client = None
+        for c in clients_data['clients']:
+            if str(c.get('chat_id')) == chat_id:
+                client = c
+                break
+        
+        if not client:
+            await update.message.reply_text("❌ Client not found")
+            return
+        
+        try:
+            pillars = get_pillars(client_id=client['client_id'])
+            
+            if not pillars:
+                await update.message.reply_text("📊 No pillars defined yet. Create them on the web dashboard.")
+                return
+            
+            message = "📊 **Content Pillars Performance**\n\n"
+            
+            for pillar in pillars:
+                try:
+                    perf = get_pillar_performance(pillar['id'], date_range_days=30)
+                    message += f"**{pillar['name']}**\n"
+                    message += f"Posts: {perf.get('post_count', 0)}\n"
+                    
+                    funnel = perf.get('funnel_impact', {})
+                    awareness = funnel.get('awareness', {})
+                    if awareness:
+                        total = sum(awareness.values())
+                        message += f"Awareness: {total:,}\n"
+                    
+                    message += "\n"
+                except:
+                    message += f"**{pillar['name']}** (no data yet)\n\n"
+            
+            await update.message.reply_text(message, parse_mode='Markdown')
+            return
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+            return
+    
+    else:
+        await update.message.reply_text(
+            f"❌ Unknown subcommand: `{subcommand}`\n\n"
+            "Use `/content` to see available commands.",
+            parse_mode='Markdown'
+        )
 
 if __name__ == "__main__":
     if not BOT_TOKEN:
@@ -264,12 +436,18 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("funnel", funnel))
     app.add_handler(CommandHandler("update", update_metric))
     
+    # Content commands
+    app.add_handler(CommandHandler("content", content_command))  # /content <subcommand>
+    
     print("🤖 Interactive bot started...")
     print("📱 Commands available:")
     print("   /start - Show help")
     print("   /report - Quick simple metrics")
     print("   /metrics or /funnel - Detailed report with insights")
     print("   /update <metric> <value> - Update manual metrics")
+    print("   /content create <idea> - Create content post")
+    print("   /content_list - List all posts")
+    print("   /content_pillars - Show pillar performance")
     print("\nPress Ctrl+C to stop")
     
     app.run_polling()

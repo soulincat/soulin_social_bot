@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from report_formatter import generate_action_plan
 import json
 import os
+from content.pillar_tracker import get_pillars, get_pillar_performance
+from content.center_post import list_posts
 
 
 def format_currency(value):
@@ -458,6 +460,60 @@ Gap: {diff:+,}/month
 """
     return section
 
+def format_content_performance(client_id):
+    """
+    Format content/pillar performance section for weekly reports
+    """
+    try:
+        pillars = get_pillars(client_id=client_id)
+        if not pillars:
+            return None
+        
+        posts = list_posts(client_id=client_id)
+        if not posts:
+            return None
+        
+        section = "\n━━━━━━━━━━━━━\n📝 CONTENT PERFORMANCE\n"
+        
+        # Top performing pillars
+        pillar_perfs = []
+        for pillar in pillars:
+            try:
+                perf = get_pillar_performance(pillar['id'], date_range_days=30)
+                funnel = perf.get('funnel_impact', {})
+                awareness = sum(funnel.get('awareness', {}).values())
+                capture = sum(funnel.get('capture', {}).values())
+                conversion = sum(funnel.get('conversion', {}).values())
+                pillar_perfs.append({
+                    'name': pillar['name'],
+                    'posts': perf.get('post_count', 0),
+                    'awareness': awareness,
+                    'capture': capture,
+                    'conversion': conversion
+                })
+            except:
+                pass
+        
+        if pillar_perfs:
+            # Sort by awareness
+            pillar_perfs.sort(key=lambda x: x['awareness'], reverse=True)
+            section += "\nTop Pillars (30 days):\n"
+            for p in pillar_perfs[:3]:
+                section += f"• {p['name']}: {p['posts']} posts, {p['awareness']:,} awareness\n"
+        
+        # Recent posts
+        recent_posts = [p for p in posts if p.get('status') in ['published', 'branched']][:5]
+        if recent_posts:
+            section += f"\nRecent Posts: {len(recent_posts)}\n"
+            for post in recent_posts[:3]:
+                title = post.get('center_post', {}).get('title') or post.get('raw_idea', 'Untitled')[:40]
+                section += f"• {title}\n"
+        
+        return section
+    except Exception as e:
+        # Silently fail if content system not fully set up
+        return None
+
 def format_bottom_line(metrics):
     """
     EXACT working format
@@ -521,6 +577,14 @@ def generate_full_report(client_data, project_data, metrics, last_metrics=None):
     if action_plan:
         sections.append(action_plan.lstrip('\n'))
     sections.append(format_growth_trajectory(metrics).lstrip('\n'))
+    
+    # Add content performance if available
+    client_id = client_data.get('client_id')
+    if client_id:
+        content_section = format_content_performance(client_id)
+        if content_section:
+            sections.append(content_section.lstrip('\n'))
+    
     sections.append(format_bottom_line(metrics).lstrip('\n'))
     
     report = '\n'.join(sections)
