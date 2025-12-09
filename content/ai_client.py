@@ -262,38 +262,108 @@ Return JSON format:
         except Exception as e:
             raise Exception(f"Error generating blog version: {str(e)}")
     
-    def generate_social_posts(self, center_post_content, platforms=['x', 'linkedin', 'instagram']):
+    def generate_social_posts(self, center_post_content, platforms=['linkedin', 'x', 'threads', 'instagram', 'substack'], brand_socials=None):
         """
-        Generate 3-5 social post variations
-        Returns: List of posts per platform
+        Generate social media posts for multiple platforms
+        Returns: Dict with posts per platform
+        
+        Args:
+            center_post_content: The source content to generate from
+            platforms: List of platforms to generate for
+            brand_socials: Optional dict of platform-specific brand settings from brand.socials
         """
+        # Default platform requirements
+        default_requirements = {
+            'linkedin': 'Professional, 1200 chars max, can include line breaks for readability',
+            'x': '280 chars max, can be threads (multiple posts), concise and punchy',
+            'threads': 'Similar to X but slightly more casual, 500 chars per post, can be threads',
+            'instagram': 'Carousel concept with 6-8 slides, each slide description, engaging captions',
+            'substack': 'Newsletter-style feed post, 300-500 words, engaging hook'
+        }
+        
+        # Build platform-specific requirements using brand settings
+        platform_requirements = []
+        for p in platforms:
+            platform_settings = brand_socials.get(p, {}) if brand_socials else {}
+            enabled = platform_settings.get('enabled', True)
+            
+            if not enabled:
+                continue  # Skip disabled platforms
+            
+            req_parts = []
+            
+            # Use custom voice if specified
+            if platform_settings.get('voice'):
+                req_parts.append(f"Voice: {platform_settings['voice']}")
+            
+            # Use custom tone if specified
+            if platform_settings.get('tone'):
+                req_parts.append(f"Tone: {platform_settings['tone']}")
+            
+            # Use length limits if specified
+            min_len = platform_settings.get('minLength')
+            max_len = platform_settings.get('maxLength')
+            if min_len or max_len:
+                length_desc = f"{min_len or 'no min'}-{max_len or 'no max'} chars"
+                req_parts.append(length_desc)
+            else:
+                req_parts.append(default_requirements.get(p, 'Platform-appropriate format'))
+            
+            # Add format preferences
+            if platform_settings.get('format'):
+                req_parts.append(f"Format: {platform_settings['format']}")
+            
+            req_text = ', '.join(req_parts) if req_parts else default_requirements.get(p, 'Platform-appropriate format')
+            platform_requirements.append(f"- {p.upper()}: {req_text}")
+        
+        reqs = '\n'.join(platform_requirements)
+        
+        # Build post count requirements
+        post_count_reqs = []
+        for p in platforms:
+            platform_settings = brand_socials.get(p, {}) if brand_socials else {}
+            enabled = platform_settings.get('enabled', True)
+            if enabled:
+                post_count = platform_settings.get('postCount', 1)
+                post_count_reqs.append(f"- {p.upper()}: Generate {post_count} post(s)")
+        
+        post_count_text = '\n'.join(post_count_reqs) if post_count_reqs else ''
+        
         prompt = f"""Generate social media posts from this content:
 
 {center_post_content}
 
-Generate posts for these platforms: {', '.join(platforms)}
+Generate posts for these platforms: {', '.join([p.upper() for p in platforms])}
 
 Requirements:
 - Hook-first, value-dense
-- CTA at end
+- CTA at end (where appropriate)
 - Platform-appropriate format
-- For X: 280 chars max, can be threads
-- For LinkedIn: 1200 chars max
-- For Instagram: Carousel concept (8 slides with descriptions)
+{reqs}
+{post_count_text if post_count_text else ''}
 
 Return JSON format:
 {{
-  "x": [
-    {{"content": "post 1...", "type": "single_post"}},
-    {{"content": "post 2...", "type": "thread", "thread_parts": ["part 1", "part 2"]}}
-  ],
   "linkedin": [
     {{"content": "LinkedIn post...", "type": "single_post"}}
   ],
+  "x": [
+    {{"content": "X post 1...", "type": "single_post"}},
+    {{"content": "X post 2...", "type": "thread", "thread_parts": ["part 1", "part 2"]}}
+  ],
+  "threads": [
+    {{"content": "Threads post 1...", "type": "single_post"}},
+    {{"content": "Threads post 2...", "type": "thread", "thread_parts": ["part 1", "part 2"]}}
+  ],
   "instagram": [
-    {{"content": "IG carousel concept...", "type": "carousel", "slides": ["slide 1", "slide 2", ...]}}
+    {{"content": "IG carousel concept...", "type": "carousel", "slides": ["slide 1 description", "slide 2 description", ...]}}
+  ],
+  "substack": [
+    {{"content": "Substack feed post...", "type": "feed_post"}}
   ]
-}}"""
+}}
+
+IMPORTANT: Generate the exact number of posts specified for each platform above."""
         
         try:
             message = self.client.messages.create(

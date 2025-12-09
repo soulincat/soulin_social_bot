@@ -37,11 +37,154 @@
             background: rgba(248, 113, 113, 0.2);
             color: #f87171;
         }
+        .platform-tabs-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .platform-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .platform-tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #a8b2d1;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .platform-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+        .platform-tab.selected {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: rgba(168, 85, 247, 0.4);
+            color: #c084fc;
+        }
+        .platform-tab.selected::after {
+            content: '✓';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: rgba(168, 85, 247, 0.8);
+            color: #ffffff;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .generate-button-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
         .derivative-item {
             background: rgba(255, 255, 255, 0.05);
-            padding: 1rem;
+            padding: 1.5rem;
             border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .derivative-item:last-child {
+            margin-bottom: 0;
+        }
+        .social-platform {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #c084fc;
             margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .social-content {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.25rem;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: #ffffff;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            margin-top: 0.75rem;
+        }
+        .social-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .social-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-approve {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+        }
+        .btn-approve:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+        .btn-regenerate {
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+        .btn-regenerate:hover {
+            background: rgba(56, 189, 248, 0.3);
+        }
+        .word-count {
+            color: #a8b2d1;
+            font-size: 0.75rem;
+        }
+        #derivatives-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #derivatives-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        #derivatives-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        #derivatives-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         .action-buttons {
             display: flex;
@@ -64,9 +207,9 @@
             </div>
             <div class="nav-actions">
                 <a href="/" class="ghost-button">Dashboard</a>
-                <a href="/content" class="ghost-button">Content</a>
-                <a href="/content/create" class="glass-button">+ New Post</a>
+                <a href="/content" class="ghost-button">Posts</a>
                 <a href="/settings" class="ghost-button">Settings</a>
+                <a href="/content/create" class="glass-button">+ New Post</a>
             </div>
         </header>
 
@@ -90,7 +233,14 @@
                 
                 contentEl.innerHTML = `
                     <section class="glass-card content-section">
-                        <div class="panel-title">Center Post</div>
+                        <div class="panel-title">Original Idea</div>
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1.25rem; border-radius: 12px; border-left: 3px solid rgba(168, 85, 247, 0.5);">
+                            <p style="color: #ffffff; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; margin: 0;">${post.raw_idea || 'No idea provided'}</p>
+                        </div>
+                    </section>
+                    
+                    <section class="glass-card content-section">
+                        <div class="panel-title">Newsletter (Center Post)</div>
                         ${post.center_post ? `
                             <h2>${post.center_post.title}</h2>
                             <div class="content-preview">${post.center_post.content}</div>
@@ -113,39 +263,29 @@
                         `}
                     </section>
                     
-                    ${post.archive_version ? `
-                        <section class="glass-card content-section">
-                            <div class="panel-title">Archive Version (Chapter ${post.archive_version.chapter_number})</div>
-                            <div class="content-preview">${post.archive_version.content}</div>
-                        </section>
-                    ` : `
-                        <section class="glass-card content-section">
-                            <div class="panel-title">Archive Version</div>
-                            <p style="color: #a8b2d1;">Not generated yet</p>
-                            <div class="action-buttons">
-                                <button class="glass-button" onclick="generateBranches()">Generate Archive & Blog</button>
-                            </div>
-                        </section>
-                    `}
-                    
-                    ${post.blog_version ? `
-                        <section class="glass-card content-section">
-                            <div class="panel-title">Blog Version</div>
-                            <div class="content-preview">${post.blog_version.content}</div>
-                        </section>
-                    ` : ''}
-                    
                     <section class="glass-card content-section">
-                        <div class="panel-title">Derivatives</div>
-                        <div id="derivatives-list">
-                            <p style="color: #a8b2d1;">Loading derivatives...</p>
+                        <div class="panel-title">Socials</div>
+                        <div class="platform-tabs-container">
+                            <div class="platform-tabs" id="platform-tabs">
+                                <button class="platform-tab" data-platform="linkedin" onclick="togglePlatform('linkedin')">LinkedIn</button>
+                                <button class="platform-tab" data-platform="x" onclick="togglePlatform('x')">X</button>
+                                <button class="platform-tab" data-platform="threads" onclick="togglePlatform('threads')">Threads</button>
+                                <button class="platform-tab" data-platform="instagram" onclick="togglePlatform('instagram')">IG</button>
+                                <button class="platform-tab" data-platform="substack" onclick="togglePlatform('substack')">Substack</button>
+                                <button class="platform-tab" data-platform="telegram" onclick="togglePlatform('telegram')">Telegram</button>
+                            </div>
+                            <div class="generate-button-container">
+                                <button class="glass-button" onclick="generateDerivatives()" id="generate-btn" style="display: none;">Generate Selected</button>
+                                <span id="filter-hint" style="color: #a8b2d1; font-size: 0.85rem; display: none;">Click platforms to filter</span>
+                            </div>
                         </div>
-                        <div class="action-buttons">
-                            <button class="glass-button" onclick="generateDerivatives()">Generate All Derivatives</button>
+                        <div id="derivatives-list" style="max-height: 70vh; overflow-y: auto; padding-right: 0.5rem; margin-top: 1.5rem;">
+                            <p style="color: #a8b2d1;">Loading socials...</p>
                         </div>
                     </section>
                 `;
                 
+                // Load derivatives first, then update button
                 loadDerivatives();
             } catch (error) {
                 document.getElementById('post-content').innerHTML = `
@@ -156,40 +296,200 @@
             }
         }
         
+        let allDerivatives = [];
+        let selectedPlatforms = new Set(); // For generation selection
+        let filteredPlatforms = new Set(); // For viewing filters
+        
+        function togglePlatform(platform) {
+            const tab = document.querySelector(`[data-platform="${platform}"]`);
+            
+            // If no content generated yet, use as selection for generation
+            if (allDerivatives.length === 0) {
+                if (selectedPlatforms.has(platform)) {
+                    selectedPlatforms.delete(platform);
+                    tab.classList.remove('selected');
+                } else {
+                    selectedPlatforms.add(platform);
+                    tab.classList.add('selected');
+                }
+                updateGenerateButton();
+            } else {
+                // If content exists, use as filter for viewing
+                if (filteredPlatforms.has(platform)) {
+                    filteredPlatforms.delete(platform);
+                    tab.classList.remove('selected');
+                } else {
+                    filteredPlatforms.add(platform);
+                    tab.classList.add('selected');
+                }
+                renderDerivatives();
+            }
+        }
+        
+        function updateGenerateButton() {
+            const btn = document.getElementById('generate-btn');
+            const hint = document.getElementById('filter-hint');
+            if (!btn || !hint) return; // Elements not yet created
+            
+            // Show/hide based on whether content exists
+            if (allDerivatives.length === 0) {
+                // Generation mode: show generate button
+                btn.style.display = 'inline-block';
+                hint.style.display = 'none';
+                if (selectedPlatforms.size === 0) {
+                    btn.textContent = 'Generate All Socials';
+                } else {
+                    btn.textContent = `Generate ${selectedPlatforms.size} Selected`;
+                }
+            } else {
+                // Filter mode: show hint, hide generate button
+                btn.style.display = 'none';
+                hint.style.display = 'inline-block';
+                if (filteredPlatforms.size === 0) {
+                    hint.textContent = 'Showing all platforms • Click to filter';
+                } else {
+                    hint.textContent = `Filtering ${filteredPlatforms.size} platform(s) • Click to change`;
+                }
+            }
+        }
+        
+        function renderDerivatives() {
+            const listEl = document.getElementById('derivatives-list');
+            
+            if (allDerivatives.length === 0) {
+                listEl.innerHTML = '<p style="color: #a8b2d1;">No socials generated yet. Select platforms and click "Generate Selected" to create posts.</p>';
+                return;
+            }
+            
+            // Filter by selected platforms if any are selected
+            let filtered = allDerivatives;
+            if (filteredPlatforms.size > 0) {
+                filtered = allDerivatives.filter(deriv => {
+                    const platform = deriv.type.toLowerCase();
+                    return filteredPlatforms.has(platform);
+                });
+            }
+            
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<p style="color: #a8b2d1;">No socials match the selected platform filters.</p>';
+                return;
+            }
+            
+            const platformNames = {
+                'linkedin': 'LinkedIn',
+                'x': 'X',
+                'social_x': 'X',
+                'threads': 'Threads',
+                'instagram': 'Instagram',
+                'ig': 'Instagram',
+                'social_ig': 'Instagram',
+                'substack': 'Substack',
+                'newsletter': 'Newsletter',
+                'telegram': 'Telegram'
+            };
+            
+            listEl.innerHTML = filtered.map(deriv => {
+                const platformName = platformNames[deriv.type.toLowerCase()] || deriv.type.replace('social_', '').replace('_', ' ').toUpperCase();
+                const status = deriv.metadata?.status || 'draft';
+                const wordCount = deriv.content ? deriv.content.split(/\s+/).length : 0;
+                const isDraft = status === 'draft';
+                const isApproved = status === 'approved';
+                
+                // Format scheduled time if queued
+                let scheduledTimeDisplay = '';
+                if (status === 'queued' && deriv.scheduled_for) {
+                    try {
+                        const scheduledDate = new Date(deriv.scheduled_for);
+                        scheduledTimeDisplay = `<br><span style="color: #38bdf8; font-size: 0.75rem;">Scheduled: ${scheduledDate.toLocaleString()}</span>`;
+                    } catch (e) {
+                        scheduledTimeDisplay = `<br><span style="color: #38bdf8; font-size: 0.75rem;">Scheduled: ${deriv.scheduled_for}</span>`;
+                    }
+                }
+                
+                return `
+                    <div class="derivative-item" data-platform="${deriv.type.toLowerCase()}" style="margin-bottom: 1.5rem;">
+                        <div class="social-platform">${platformName}</div>
+                        <div class="social-meta">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <p style="color: #a8b2d1; margin: 0; font-size: 0.85rem;">
+                                    Status: <span style="color: ${status === 'published' ? '#22c55e' : status === 'queued' ? '#38bdf8' : status === 'approved' ? '#a855f7' : '#a8b2d1'}">${status}</span>${scheduledTimeDisplay}
+                                </p>
+                                <span class="word-count">${wordCount} words</span>
+                            </div>
+                            <div class="social-actions">
+                                ${isDraft ? `<button class="btn-small btn-approve" onclick="approvePost('${deriv.id}')">Approve</button>` : ''}
+                                <button class="btn-small btn-regenerate" onclick="regeneratePost('${deriv.id}')">Regenerate</button>
+                            </div>
+                        </div>
+                        <div class="social-content">${deriv.content || 'No content'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
         async function loadDerivatives() {
             try {
                 const response = await fetch(`/api/content/derivatives?post_id=${postId}`);
                 const data = await response.json();
-                const derivatives = data.derivatives || [];
+                allDerivatives = data.derivatives || [];
                 
                 const listEl = document.getElementById('derivatives-list');
-                if (derivatives.length === 0) {
-                    listEl.innerHTML = '<p style="color: #a8b2d1;">No derivatives yet</p>';
+                if (allDerivatives.length === 0) {
+                    listEl.innerHTML = '<p style="color: #a8b2d1;">No socials generated yet. Select platforms and click "Generate Selected" to create posts.</p>';
+                    // Clear any selected platforms when no content exists
+                    selectedPlatforms.clear();
+                    filteredPlatforms.clear();
+                    document.querySelectorAll('.platform-tab').forEach(tab => tab.classList.remove('selected'));
+                    updateGenerateButton();
                     return;
                 }
                 
-                listEl.innerHTML = derivatives.map(deriv => `
-                    <div class="derivative-item">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                            <div>
-                                <strong>${deriv.type.replace('_', ' ').toUpperCase()}</strong>
-                                <p style="color: #a8b2d1; margin: 0.5rem 0; font-size: 0.85rem;">
-                                    Status: ${deriv.metadata?.status || 'unknown'}
-                                </p>
-                                ${deriv.scheduled_for ? `
-                                    <p style="color: #a8b2d1; font-size: 0.75rem;">
-                                        Scheduled: ${new Date(deriv.scheduled_for).toLocaleString()}
-                                    </p>
-                                ` : ''}
-                            </div>
-                        </div>
-                        <div class="content-preview" style="max-height: 150px; margin-top: 0.5rem;">
-                            ${deriv.content?.substring(0, 200)}${deriv.content?.length > 200 ? '...' : ''}
-                        </div>
-                    </div>
-                `).join('');
+                // Clear generation selection and switch to filter mode
+                selectedPlatforms.clear();
+                filteredPlatforms.clear();
+                document.querySelectorAll('.platform-tab').forEach(tab => tab.classList.remove('selected'));
+                
+                renderDerivatives();
+                updateGenerateButton();
             } catch (error) {
                 console.error('Error loading derivatives:', error);
+            }
+        }
+        
+        async function approvePost(derivId) {
+            try {
+                const response = await fetch(`/api/content/derivatives/${derivId}/approve`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('Post approved! It can now be scheduled.');
+                    loadDerivatives();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to approve'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        async function regeneratePost(derivId) {
+            if (!confirm('Regenerate this post? This will replace the current content.')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/content/derivatives/${derivId}/regenerate`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('Post regenerated! Refreshing...');
+                    loadDerivatives();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to regenerate'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
             }
         }
         
@@ -198,39 +498,48 @@
             alert('Expand functionality coming soon');
         }
         
-        async function generateBranches() {
-            try {
-                const response = await fetch(`/api/content/posts/${postId}/branch`, {
-                    method: 'POST'
-                });
-                if (response.ok) {
-                    alert('Branches generated! Refreshing...');
-                    loadPost();
-                } else {
-                    const data = await response.json();
-                    alert(`Error: ${data.error}`);
-                }
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            }
-        }
-        
         async function generateDerivatives() {
+            const platforms = selectedPlatforms.size > 0 
+                ? Array.from(selectedPlatforms) 
+                : ['linkedin', 'x', 'threads', 'instagram', 'substack', 'telegram'];
+            
+            if (platforms.length === 0) {
+                alert('Please select at least one platform');
+                return;
+            }
+            
             try {
+                const btn = document.getElementById('generate-btn');
+                btn.disabled = true;
+                btn.textContent = 'Generating...';
+                
                 const response = await fetch(`/api/content/posts/${postId}/generate`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({include_podcast: false})
+                    body: JSON.stringify({
+                        include_podcast: false,
+                        platforms: platforms
+                    })
                 });
+                
                 if (response.ok) {
-                    alert('Derivatives generated! Refreshing...');
-                    loadPost();
+                    alert(`Socials generated for ${platforms.length} platform(s)! Refreshing...`);
+                    // Clear generation selections (will switch to filter mode after reload)
+                    selectedPlatforms.clear();
+                    document.querySelectorAll('.platform-tab').forEach(tab => tab.classList.remove('selected'));
+                    updateGenerateButton();
+                    loadDerivatives(); // Reload derivatives to switch to filter mode
                 } else {
                     const data = await response.json();
                     alert(`Error: ${data.error}`);
+                    btn.disabled = false;
+                    updateGenerateButton();
                 }
             } catch (error) {
                 alert(`Error: ${error.message}`);
+                const btn = document.getElementById('generate-btn');
+                btn.disabled = false;
+                updateGenerateButton();
             }
         }
         

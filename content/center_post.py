@@ -53,7 +53,7 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
         "id": post_id,
         "created_at": datetime.now().isoformat(),
         "client_id": client_id,
-        "status": "draft",
+        "status": "idea",  # Start as "idea"
         "raw_idea": raw_idea,
         "pillar_id": pillar_id,
         "time_invested_minutes": 0
@@ -77,7 +77,7 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
                 "word_count": expanded.get('word_count', word_count),
                 "checks": expanded.get('checks', {})
             }
-            post['status'] = 'processing'
+            post['status'] = 'drafted'  # After AI expansion, status becomes "drafted"
             
             # Save
             data['posts'].append(post)
@@ -85,8 +85,8 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
             
             return post
         except Exception as e:
-            # Save draft even if AI fails
-            post['status'] = 'draft'
+            # Save as idea even if AI fails
+            post['status'] = 'idea'
             post['error'] = str(e)
             data = load_content_posts()
             data['posts'].append(post)

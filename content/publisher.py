@@ -12,6 +12,7 @@ load_dotenv()
 def schedule_derivatives(post_id, schedule_config):
     """
     Schedule derivatives for publishing
+    Changes status from 'approved' to 'queued' when scheduled
     
     Args:
         post_id: ID of the center post
@@ -23,10 +24,11 @@ def schedule_derivatives(post_id, schedule_config):
                 "social_stagger_hours": 24
             }
     """
-    derivatives = get_derivatives(post_id=post_id, status='queued')
+    # Get approved derivatives (they become queued when scheduled)
+    derivatives = get_derivatives(post_id=post_id, status='approved')
     
     if not derivatives:
-        raise ValueError(f"No queued derivatives found for post {post_id}")
+        raise ValueError(f"No approved derivatives found for post {post_id}")
     
     data = load_derivatives()
     
@@ -34,11 +36,12 @@ def schedule_derivatives(post_id, schedule_config):
         deriv_type = derivative.get('type')
         
         # Set scheduled_for based on type
+        scheduled_time = None
         if deriv_type == 'newsletter' and schedule_config.get('newsletter_send_at'):
-            derivative['scheduled_for'] = schedule_config['newsletter_send_at']
+            scheduled_time = schedule_config['newsletter_send_at']
         elif deriv_type == 'telegram' and schedule_config.get('telegram_send_at'):
-            derivative['scheduled_for'] = schedule_config['telegram_send_at']
-        elif deriv_type.startswith('social_'):
+            scheduled_time = schedule_config['telegram_send_at']
+        elif deriv_type in ['linkedin', 'x', 'threads', 'instagram', 'substack']:
             # Stagger social posts
             base_time = schedule_config.get('social_start_at', schedule_config.get('newsletter_send_at'))
             if base_time:
@@ -47,12 +50,14 @@ def schedule_derivatives(post_id, schedule_config):
                 post_num = derivative.get('metadata', {}).get('post_number', 1)
                 stagger_hours = schedule_config.get('social_stagger_hours', 24)
                 scheduled_dt = base_dt + timedelta(hours=(post_num - 1) * stagger_hours)
-                derivative['scheduled_for'] = scheduled_dt.isoformat()
+                scheduled_time = scheduled_dt.isoformat()
         
         # Update in data
         for d in data['derivatives']:
             if d['id'] == derivative['id']:
-                d['scheduled_for'] = derivative.get('scheduled_for')
+                if scheduled_time:
+                    d['scheduled_for'] = scheduled_time
+                    d['metadata']['status'] = 'queued'  # Change from approved to queued
                 break
     
     save_derivatives(data)

@@ -22,21 +22,208 @@
             </div>
             <div class="nav-actions">
                 <a href="/" class="ghost-button">Dashboard</a>
-                <a href="/content" class="ghost-button">Content</a>
-                <a href="/content/create" class="glass-button">+ New Post</a>
+                <a href="/content" class="ghost-button">Posts</a>
                 <a href="/settings" class="ghost-button">Settings</a>
+                <a href="/content/create" class="glass-button">+ New Post</a>
             </div>
         </header>
 
         <section class="glass-card">
             <div class="panel-title">All Content Posts</div>
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                <span style="color: #a8b2d1; font-size: 0.9rem;">Filter by status:</span>
+                <button class="status-filter-btn" data-status="all" onclick="filterByStatus('all')" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">All</button>
+                <button class="status-filter-btn" data-status="idea" onclick="filterByStatus('idea')">Idea</button>
+                <button class="status-filter-btn" data-status="drafted" onclick="filterByStatus('drafted')">Drafted</button>
+                <button class="status-filter-btn" data-status="branched" onclick="filterByStatus('branched')">Branched</button>
+                <button class="status-filter-btn" data-status="approved" onclick="filterByStatus('approved')">Approved</button>
+                <button class="status-filter-btn" data-status="queued" onclick="filterByStatus('queued')">Queued</button>
+                <button class="status-filter-btn" data-status="published" onclick="filterByStatus('published')">Published</button>
+            </div>
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                <span style="color: #a8b2d1; font-size: 0.9rem;">Filter by category:</span>
+                <button class="category-filter-btn" data-category="all" onclick="filterByCategory('all')" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">All</button>
+                <button class="category-filter-btn" data-category="uncategorized" onclick="filterByCategory('uncategorized')">Uncategorized</button>
+                <span id="pillar-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></span>
+            </div>
             <div id="posts-list" class="content-list">
                 <p style="color: #a8b2d1;">Loading posts...</p>
             </div>
         </section>
+        
+        <style>
+            .status-filter-btn {
+                padding: 0.5rem 1rem;
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                color: #a8b2d1;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .status-filter-btn:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: #ffffff;
+            }
+            .status-filter-btn.active {
+                background: rgba(168, 85, 247, 0.2);
+                border-color: rgba(168, 85, 247, 0.4);
+                color: #c084fc;
+            }
+            .category-filter-btn {
+                padding: 0.5rem 1rem;
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                color: #a8b2d1;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .category-filter-btn:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: #ffffff;
+            }
+            .category-filter-btn.active {
+                background: rgba(168, 85, 247, 0.2);
+                border-color: rgba(168, 85, 247, 0.4);
+                color: #c084fc;
+            }
+        </style>
     </main>
 
     <script>
+        let allPosts = [];
+        let allPillars = [];
+        let currentStatusFilter = 'all';
+        let currentCategoryFilter = 'all';
+        
+        // Filter posts by status
+        function filterByStatus(status) {
+            currentStatusFilter = status;
+            
+            // Update button states
+            document.querySelectorAll('.status-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.status === status) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            renderPosts();
+        }
+        
+        // Filter posts by category/pillar
+        function filterByCategory(category) {
+            currentCategoryFilter = category;
+            
+            // Update button states
+            document.querySelectorAll('.category-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.category === category) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            renderPosts();
+        }
+        
+        // Render posts based on current filters
+        function renderPosts() {
+            let filteredPosts = allPosts;
+            
+            // Apply status filter
+            if (currentStatusFilter !== 'all') {
+                filteredPosts = filteredPosts.filter(post => post.status === currentStatusFilter);
+            }
+            
+            // Apply category filter
+            if (currentCategoryFilter !== 'all') {
+                if (currentCategoryFilter === 'uncategorized') {
+                    filteredPosts = filteredPosts.filter(post => !post.pillar_id);
+                } else {
+                    filteredPosts = filteredPosts.filter(post => post.pillar_id === currentCategoryFilter);
+                }
+            }
+            
+            const listEl = document.getElementById('posts-list');
+            
+            if (filteredPosts.length === 0) {
+                listEl.innerHTML = (currentStatusFilter === 'all' && currentCategoryFilter === 'all')
+                    ? '<p style="color: #a8b2d1;">No posts yet. <a href="/content/create" style="color: #a855f7;">Create your first post</a></p>'
+                    : `<p style="color: #a8b2d1;">No posts match the selected filters.</p>`;
+                return;
+            }
+            
+            listEl.innerHTML = filteredPosts.map(post => {
+                const statusColor = {
+                    'idea': '#a8b2d1',
+                    'drafted': '#60a5fa',
+                    'branched': '#f59e0b',
+                    'approved': '#a855f7',
+                    'queued': '#38bdf8',
+                    'published': '#22c55e'
+                }[post.status] || '#a8b2d1';
+                
+                // Find pillar name if exists
+                const pillar = allPillars.find(p => p.id === post.pillar_id);
+                const pillarName = pillar ? pillar.name : null;
+                
+                const displayTitle = post.center_post?.title || post.raw_idea?.substring(0, 60) || 'Untitled';
+                const displayIdea = post.raw_idea ? (post.raw_idea.length > 100 ? post.raw_idea.substring(0, 100) + '...' : post.raw_idea) : '';
+                
+                return `
+                    <article class="glass-card" style="margin-bottom: 1rem; cursor: pointer;" onclick="window.location.href='/content/${post.id}'">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 0.5rem;">${displayTitle}</h3>
+                                ${displayIdea && post.center_post ? `
+                                    <p style="color: #a8b2d1; margin: 0.25rem 0 0.5rem 0; font-size: 0.85rem; font-style: italic;">
+                                        "${displayIdea}"
+                                    </p>
+                                ` : ''}
+                                <p style="color: #a8b2d1; margin: 0.25rem 0; font-size: 0.85rem;">
+                                    <span style="color: ${statusColor}; font-weight: 500;">${post.status}</span> • ${post.center_post?.word_count || 0} words
+                                    ${pillarName ? ` • <span style="color: ${pillar.color || '#a855f7'}; font-size: 0.8rem;">${pillarName}</span>` : ' • <span style="color: #a8b2d1; font-size: 0.8rem;">Uncategorized</span>'}
+                                </p>
+                                <p style="color: #a8b2d1; margin: 0.25rem 0; font-size: 0.75rem;">
+                                    ${new Date(post.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+                                ${post.derivatives_count > 0 ? `<span style="font-size: 0.75rem; color: #22c55e;">${post.derivatives_count} socials</span>` : ''}
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+        
+        // Load pillars and create filter buttons
+        async function loadPillars() {
+            try {
+                const response = await fetch('/api/content/pillars');
+                const data = await response.json();
+                allPillars = data.pillars || [];
+                
+                const pillarFiltersEl = document.getElementById('pillar-filters');
+                allPillars.forEach(pillar => {
+                    const btn = document.createElement('button');
+                    btn.className = 'category-filter-btn';
+                    btn.dataset.category = pillar.id;
+                    btn.textContent = pillar.name;
+                    btn.style.borderColor = pillar.color || 'rgba(255, 255, 255, 0.15)';
+                    btn.onclick = () => filterByCategory(pillar.id);
+                    pillarFiltersEl.appendChild(btn);
+                });
+            } catch (error) {
+                console.error('Error loading pillars:', error);
+            }
+        }
+        
         // Load posts on page load
         async function loadPosts() {
             try {
@@ -44,37 +231,30 @@
                 const data = await response.json();
                 const posts = data.posts || [];
                 
-                const listEl = document.getElementById('posts-list');
+                // Load derivatives count for each post
+                allPosts = await Promise.all(posts.map(async (post) => {
+                    try {
+                        const derivResponse = await fetch(`/api/content/derivatives?post_id=${post.id}`);
+                        const derivData = await derivResponse.json();
+                        post.derivatives_count = derivData.derivatives?.length || 0;
+                    } catch (e) {
+                        post.derivatives_count = 0;
+                    }
+                    return post;
+                }));
                 
-                if (posts.length === 0) {
-                    listEl.innerHTML = '<p style="color: #a8b2d1;">No posts yet. <a href="/content/create" style="color: #a855f7;">Create your first post</a></p>';
-                    return;
-                }
+                // Set initial filter button states
+                document.querySelector('[data-status="all"]').classList.add('active');
+                document.querySelector('[data-category="all"]').classList.add('active');
                 
-                listEl.innerHTML = posts.map(post => `
-                    <article class="glass-card" style="margin-bottom: 1rem; cursor: pointer;" onclick="window.location.href='/content/${post.id}'">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                            <div style="flex: 1;">
-                                <h3 style="margin: 0 0 0.5rem;">${post.center_post?.title || post.raw_idea?.substring(0, 60) || 'Untitled'}</h3>
-                                <p style="color: #a8b2d1; margin: 0.25rem 0; font-size: 0.85rem;">
-                                    ${post.status} • ${post.center_post?.word_count || 0} words
-                                </p>
-                                <p style="color: #a8b2d1; margin: 0.25rem 0; font-size: 0.75rem;">
-                                    ${new Date(post.created_at).toLocaleDateString()}
-                                </p>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; flex-direction: column;">
-                                ${post.archive_version ? '<span style="font-size: 0.75rem; color: #22c55e;">✓ Archive</span>' : ''}
-                                ${post.blog_version ? '<span style="font-size: 0.75rem; color: #22c55e;">✓ Blog</span>' : ''}
-                            </div>
-                        </div>
-                    </article>
-                `).join('');
+                renderPosts();
             } catch (error) {
                 document.getElementById('posts-list').innerHTML = `<p style="color: #f87171;">Error loading posts: ${error.message}</p>`;
             }
         }
         
+        // Load both pillars and posts
+        loadPillars();
         loadPosts();
         
         // Noise canvas (same as dashboard)

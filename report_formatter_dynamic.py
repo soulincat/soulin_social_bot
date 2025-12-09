@@ -502,7 +502,7 @@ def format_content_performance(client_id):
                 section += f"• {p['name']}: {p['posts']} posts, {p['awareness']:,} awareness\n"
         
         # Recent posts
-        recent_posts = [p for p in posts if p.get('status') in ['published', 'branched']][:5]
+        recent_posts = [p for p in posts if p.get('status') in ['published', 'queued', 'approved', 'branched']][:5]
         if recent_posts:
             section += f"\nRecent Posts: {len(recent_posts)}\n"
             for post in recent_posts[:3]:

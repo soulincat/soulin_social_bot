@@ -63,6 +63,21 @@ def api_get_post(post_id):
         return jsonify({"error": "Post not found"}), 404
     return jsonify(post)
 
+@app.route('/api/content/posts/<post_id>', methods=['PUT'])
+def api_update_post(post_id):
+    """Update a post (status, pillar_id, etc.)"""
+    try:
+        updates = request.json
+        if not updates:
+            return jsonify({"error": "No update data provided"}), 400
+        
+        post = update_post(post_id, updates)
+        return jsonify(post)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/content/posts/<post_id>/branch', methods=['POST'])
 def api_generate_branches(post_id):
     """Generate archive and blog versions"""
@@ -74,12 +89,19 @@ def api_generate_branches(post_id):
 
 @app.route('/api/content/posts/<post_id>/generate', methods=['POST'])
 def api_generate_derivatives(post_id):
-    """Generate all derivatives"""
+    """Generate derivatives for selected platforms"""
     data = request.json or {}
+    platforms = data.get('platforms', ['linkedin', 'x', 'threads', 'instagram', 'substack', 'telegram'])
     try:
+        # Get client_id from post
+        post = get_post(post_id)
+        client_id = post.get('client_id') if post else None
+        
         derivatives = generate_derivatives(
             post_id,
-            include_podcast=data.get('include_podcast', False)
+            include_podcast=data.get('include_podcast', False),
+            platforms=platforms,
+            client_id=client_id
         )
         return jsonify({"derivatives": derivatives})
     except Exception as e:
@@ -102,6 +124,85 @@ def api_list_derivatives():
     status = request.args.get('status')
     derivatives = get_derivatives(post_id=post_id, status=status)
     return jsonify({"derivatives": derivatives})
+
+@app.route('/api/content/derivatives/<deriv_id>/approve', methods=['POST'])
+def api_approve_derivative(deriv_id):
+    """Approve a derivative (change status from draft to approved)"""
+    try:
+        from content.derivative_generator import load_derivatives, save_derivatives
+        data = load_derivatives()
+        derivative = None
+        for i, d in enumerate(data.get('derivatives', [])):
+            if d.get('id') == deriv_id:
+                derivative = d
+                if d.get('metadata', {}).get('status') == 'draft':
+                    data['derivatives'][i]['metadata']['status'] = 'approved'
+                    save_derivatives(data)
+                    return jsonify({"message": "Approved", "derivative": data['derivatives'][i]})
+                else:
+                    return jsonify({"error": "Derivative is not in draft status"}), 400
+        if not derivative:
+            return jsonify({"error": "Derivative not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/content/derivatives/<deriv_id>/regenerate', methods=['POST'])
+def api_regenerate_derivative(deriv_id):
+    """Regenerate a specific derivative"""
+    try:
+        from content.derivative_generator import load_derivatives, save_derivatives, get_derivatives
+        from content.center_post import get_post
+        from content.ai_client import ClaudeClient
+        
+        data = load_derivatives()
+        derivative = None
+        deriv_index = None
+        for i, d in enumerate(data.get('derivatives', [])):
+            if d.get('id') == deriv_id:
+                derivative = d
+                deriv_index = i
+                break
+        
+        if not derivative:
+            return jsonify({"error": "Derivative not found"}), 404
+        
+        # Get the original post
+        post = get_post(derivative.get('post_id'))
+        if not post:
+            return jsonify({"error": "Post not found"}), 404
+        
+        source_content = post.get('center_post', {}).get('content', '')
+        if not source_content:
+            return jsonify({"error": "Post has no content"}), 400
+        
+        platform = derivative.get('type', '').lower()
+        ai_client = ClaudeClient()
+        
+        # Regenerate based on platform
+        if platform in ['linkedin', 'x', 'threads', 'instagram', 'substack']:
+            social_posts = ai_client.generate_social_posts(
+                source_content, 
+                [platform],
+                brand_socials=brand_socials
+            )
+            platform_posts = social_posts.get(platform, [])
+            if platform_posts:
+                new_content = platform_posts[0].get('content', '')
+                if platform_posts[0].get('type') == 'thread' and platform_posts[0].get('thread_parts'):
+                    new_content = '\n\n---\n\n'.join(platform_posts[0].get('thread_parts', []))
+                data['derivatives'][deriv_index]['content'] = new_content
+                data['derivatives'][deriv_index]['metadata']['status'] = 'draft'
+        elif platform == 'telegram':
+            new_content = ai_client.generate_telegram_announcement(source_content)
+            data['derivatives'][deriv_index]['content'] = new_content
+            data['derivatives'][deriv_index]['metadata']['status'] = 'draft'
+        else:
+            return jsonify({"error": f"Regeneration not supported for platform: {platform}"}), 400
+        
+        save_derivatives(data)
+        return jsonify({"message": "Regenerated", "derivative": data['derivatives'][deriv_index]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/content/pillars', methods=['GET'])
 def api_list_pillars():
