@@ -91,6 +91,7 @@
             <div class="nav-actions">
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
+                <a href="/product" class="ghost-button">Product</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
             </div>
@@ -127,6 +128,16 @@
                         <input type="checkbox" id="auto_expand" name="auto_expand" checked style="width: auto; margin: 0;">
                         <span>Auto-expand with AI</span>
                     </label>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="include_cta" name="include_cta" style="width: auto; margin: 0;">
+                        <span>Include main product CTA</span>
+                    </label>
+                    <span style="font-size: 0.75rem; color: #a8b2d1; font-weight: normal; display: block; margin-top: 0.25rem; margin-left: 1.75rem;">
+                        Include the main product CTA configured in brand settings at the end of generated content
+                    </span>
                 </div>
                 
                 <div class="form-actions">
@@ -198,7 +209,8 @@
                 client_id: document.getElementById('client_id').value,
                 raw_idea: document.getElementById('raw_idea').value,
                 pillar_id: document.getElementById('pillar_id').value || null,
-                auto_expand: document.getElementById('auto_expand').checked
+                auto_expand: document.getElementById('auto_expand').checked,
+                include_cta: document.getElementById('include_cta').checked
             };
             
             try {

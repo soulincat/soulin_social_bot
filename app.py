@@ -45,7 +45,8 @@ def api_create_post():
             client_id=data.get('client_id'),
             raw_idea=data.get('raw_idea', ''),
             auto_expand=data.get('auto_expand', True),
-            pillar_id=data.get('pillar_id')
+            pillar_id=data.get('pillar_id'),
+            include_cta=data.get('include_cta', False)
         )
         print(f"Post created successfully: {post.get('id')}, status: {post.get('status')}")
         return jsonify(post), 201
@@ -146,6 +147,22 @@ def api_approve_derivative(deriv_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/content/derivatives/<deriv_id>', methods=['PUT'])
+def api_update_derivative(deriv_id):
+    """Update a derivative (content, etc.)"""
+    try:
+        from content.derivative_generator import update_derivative, load_derivatives
+        updates = request.json
+        if not updates:
+            return jsonify({"error": "No update data provided"}), 400
+        
+        derivative = update_derivative(deriv_id, updates)
+        return jsonify(derivative)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/content/derivatives/<deriv_id>/regenerate', methods=['POST'])
 def api_regenerate_derivative(deriv_id):
     """Regenerate a specific derivative"""
@@ -175,6 +192,29 @@ def api_regenerate_derivative(deriv_id):
         if not source_content:
             return jsonify({"error": "Post has no content"}), 400
         
+        # Load brand settings for regeneration
+        client_id = post.get('client_id')
+        brand_socials = {}
+        cta_info = None
+        if client_id:
+            try:
+                with open('clients.json', 'r') as f:
+                    clients_data = json.load(f)
+                    for client in clients_data.get('clients', []):
+                        if client.get('client_id') == client_id:
+                            brand_socials = client.get('brand', {}).get('socials', {})
+                            # Get CTA info if post has include_cta flag
+                            if post.get('include_cta'):
+                                main_product = client.get('brand', {}).get('main_product', {})
+                                if main_product.get('cta_text') and main_product.get('cta_url'):
+                                    cta_info = {
+                                        'text': main_product['cta_text'],
+                                        'url': main_product['cta_url']
+                                    }
+                            break
+            except Exception as e:
+                print(f"Warning: Could not load brand settings: {e}")
+        
         platform = derivative.get('type', '').lower()
         ai_client = ClaudeClient()
         
@@ -183,7 +223,8 @@ def api_regenerate_derivative(deriv_id):
             social_posts = ai_client.generate_social_posts(
                 source_content, 
                 [platform],
-                brand_socials=brand_socials
+                brand_socials=brand_socials,
+                cta_info=cta_info
             )
             platform_posts = social_posts.get(platform, [])
             if platform_posts:
@@ -278,6 +319,11 @@ def api_list_clients():
 def settings_page():
     """Settings page"""
     return send_file('web/templates/settings.html')
+
+@app.route('/product')
+def product_page():
+    """Product management page"""
+    return send_file('web/templates/product.html')
 
 @app.route('/api/clients/<client_id>/brand', methods=['GET'])
 def api_get_brand(client_id):

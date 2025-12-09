@@ -21,7 +21,7 @@ def save_content_posts(data):
     with open(CONTENT_POSTS_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
-def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
+def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, include_cta=False):
     """
     Create center post from raw idea
     
@@ -30,6 +30,7 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
         raw_idea: Raw idea text
         auto_expand: If True, use AI to expand immediately
         pillar_id: Optional pillar ID to assign
+        include_cta: If True, include main product CTA in generated content
     
     Returns:
         dict: Created post data
@@ -56,6 +57,7 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
         "status": "idea",  # Start as "idea"
         "raw_idea": raw_idea,
         "pillar_id": pillar_id,
+        "include_cta": include_cta,
         "time_invested_minutes": 0
     }
     
@@ -66,7 +68,16 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None):
             
             # Expand with AI
             ai_client = ClaudeClient()
-            expanded = ai_client.expand_idea(raw_idea, client)
+            # Get main_product CTA if include_cta is True
+            cta_info = None
+            if include_cta:
+                main_product = client.get('brand', {}).get('main_product', {})
+                if main_product.get('cta_text') and main_product.get('cta_url'):
+                    cta_info = {
+                        'text': main_product['cta_text'],
+                        'url': main_product['cta_url']
+                    }
+            expanded = ai_client.expand_idea(raw_idea, client, cta_info=cta_info)
             
             # Calculate word count
             word_count = len(expanded.get('content', '').split())

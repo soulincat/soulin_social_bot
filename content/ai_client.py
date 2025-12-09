@@ -45,10 +45,15 @@ class ClaudeClient:
         # Allow model to be configured via environment variable, default to Claude Sonnet 4
         self.model = os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514')
     
-    def expand_idea(self, raw_idea, client_config):
+    def expand_idea(self, raw_idea, client_config, cta_info=None):
         """
         Expand raw idea into full center post (800-1200 words)
         Returns: {content, checks: {mission, persona, tone, goal, identity, novelty}}
+        
+        Args:
+            raw_idea: The raw idea text
+            client_config: Client configuration dict
+            cta_info: Optional dict with 'text' and 'url' for CTA to include
         """
         business = client_config.get('business', {})
         funnel = client_config.get('funnel_structure', {})
@@ -97,6 +102,7 @@ Business context:
 - Target audience: {business.get('target_audience', 'general')}
 {brand_context}
 IMPORTANT: The content must align with the brand guidelines above. Use the specified tone, style, and personality. Follow the content goals and avoid the listed elements.
+{f"CTA: End the content with this call-to-action: {cta_info['text']} ({cta_info['url']})" if cta_info and cta_info.get('text') and cta_info.get('url') else ""}
 
 Check alignment with:
 - Mission: Does this align with the business mission?
@@ -262,7 +268,7 @@ Return JSON format:
         except Exception as e:
             raise Exception(f"Error generating blog version: {str(e)}")
     
-    def generate_social_posts(self, center_post_content, platforms=['linkedin', 'x', 'threads', 'instagram', 'substack'], brand_socials=None):
+    def generate_social_posts(self, center_post_content, platforms=['linkedin', 'x', 'threads', 'instagram', 'substack'], brand_socials=None, cta_info=None):
         """
         Generate social media posts for multiple platforms
         Returns: Dict with posts per platform
@@ -271,6 +277,7 @@ Return JSON format:
             center_post_content: The source content to generate from
             platforms: List of platforms to generate for
             brand_socials: Optional dict of platform-specific brand settings from brand.socials
+            cta_info: Optional dict with 'text' and 'url' for CTA to include
         """
         # Default platform requirements
         default_requirements = {
@@ -338,6 +345,7 @@ Generate posts for these platforms: {', '.join([p.upper() for p in platforms])}
 Requirements:
 - Hook-first, value-dense
 - CTA at end (where appropriate)
+{f"- Use this specific CTA at the end: {cta_info['text']} ({cta_info['url']})" if cta_info and cta_info.get('text') and cta_info.get('url') else "- CTA at end (where appropriate)"}
 - Platform-appropriate format
 {reqs}
 {post_count_text if post_count_text else ''}

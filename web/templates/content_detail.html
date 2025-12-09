@@ -192,6 +192,82 @@
             flex-wrap: wrap;
             margin-top: 1rem;
         }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .btn-edit {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-edit:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .edit-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            resize: vertical;
+            white-space: pre-wrap;
+        }
+        .edit-textarea:focus {
+            outline: none;
+            border-color: rgba(168, 85, 247, 0.5);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .edit-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .btn-save {
+            padding: 0.5rem 1rem;
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        .btn-save:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+        .btn-cancel {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .edit-mode {
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -208,6 +284,7 @@
             <div class="nav-actions">
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
+                <a href="/product" class="ghost-button">Product</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
             </div>
@@ -233,28 +310,36 @@
                 
                 contentEl.innerHTML = `
                     <section class="glass-card content-section">
-                        <div class="panel-title">Original Idea</div>
-                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1.25rem; border-radius: 12px; border-left: 3px solid rgba(168, 85, 247, 0.5);">
+                        <div class="section-header">
+                            <div class="panel-title">Original Idea</div>
+                            <button class="btn-edit" onclick="editIdea()">Edit</button>
+                        </div>
+                        <div id="idea-display" style="background: rgba(255, 255, 255, 0.05); padding: 1.25rem; border-radius: 12px; border-left: 3px solid rgba(168, 85, 247, 0.5);">
                             <p style="color: #ffffff; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; margin: 0;">${post.raw_idea || 'No idea provided'}</p>
                         </div>
                     </section>
                     
                     <section class="glass-card content-section">
-                        <div class="panel-title">Newsletter (Center Post)</div>
+                        <div class="section-header">
+                            <div class="panel-title">Newsletter (Center Post)</div>
+                            ${post.center_post ? `<button class="btn-edit" onclick="editNewsletter()">Edit</button>` : ''}
+                        </div>
                         ${post.center_post ? `
-                            <h2>${post.center_post.title}</h2>
-                            <div class="content-preview">${post.center_post.content}</div>
-                            <div style="margin-top: 1rem;">
-                                <strong>Validation Checks:</strong><br>
-                                ${Object.entries(checks).map(([key, value]) => `
-                                    <span class="check-badge ${value ? 'check-pass' : 'check-fail'}">
-                                        ${key}: ${value ? '✓' : '✗'}
-                                    </span>
-                                `).join('')}
+                            <div id="newsletter-display">
+                                <h2>${post.center_post.title}</h2>
+                                <div class="content-preview">${post.center_post.content}</div>
+                                <div style="margin-top: 1rem;">
+                                    <strong>Validation Checks:</strong><br>
+                                    ${Object.entries(checks).map(([key, value]) => `
+                                        <span class="check-badge ${value ? 'check-pass' : 'check-fail'}">
+                                            ${key}: ${value ? '✓' : '✗'}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                                <p style="color: #a8b2d1; margin-top: 0.5rem;">
+                                    ${post.center_post.word_count} words
+                                </p>
                             </div>
-                            <p style="color: #a8b2d1; margin-top: 0.5rem;">
-                                ${post.center_post.word_count} words
-                            </p>
                         ` : `
                             <p style="color: #a8b2d1;">Draft - not yet expanded</p>
                             <div class="action-buttons">
@@ -408,7 +493,10 @@
                 
                 return `
                     <div class="derivative-item" data-platform="${deriv.type.toLowerCase()}" style="margin-bottom: 1.5rem;">
-                        <div class="social-platform">${platformName}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <div class="social-platform">${platformName}</div>
+                            <button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>
+                        </div>
                         <div class="social-meta">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <p style="color: #a8b2d1; margin: 0; font-size: 0.85rem;">
@@ -421,7 +509,7 @@
                                 <button class="btn-small btn-regenerate" onclick="regeneratePost('${deriv.id}')">Regenerate</button>
                             </div>
                         </div>
-                        <div class="social-content">${deriv.content || 'No content'}</div>
+                        <div id="social-content-${deriv.id}" class="social-content">${deriv.content || 'No content'}</div>
                     </div>
                 `;
             }).join('');
@@ -496,6 +584,133 @@
         async function expandPost() {
             // TODO: Implement expand endpoint
             alert('Expand functionality coming soon');
+        }
+        
+        // Edit functions
+        function editIdea() {
+            const displayEl = document.getElementById('idea-display');
+            const currentText = displayEl.querySelector('p').textContent;
+            
+            displayEl.innerHTML = `
+                <textarea class="edit-textarea" id="idea-edit">${currentText}</textarea>
+                <div class="edit-actions">
+                    <button class="btn-save" onclick="saveIdea()">Save</button>
+                    <button class="btn-cancel" onclick="cancelEditIdea('${currentText.replace(/'/g, "\\'")}')">Cancel</button>
+                </div>
+            `;
+        }
+        
+        async function saveIdea() {
+            const newText = document.getElementById('idea-edit').value;
+            try {
+                const response = await fetch(`/api/content/posts/${postId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ raw_idea: newText })
+                });
+                if (response.ok) {
+                    const displayEl = document.getElementById('idea-display');
+                    displayEl.innerHTML = `<p style="color: #ffffff; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; margin: 0;">${newText || 'No idea provided'}</p>`;
+                    alert('Idea updated successfully!');
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to update'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        function cancelEditIdea(originalText) {
+            const displayEl = document.getElementById('idea-display');
+            displayEl.innerHTML = `<p style="color: #ffffff; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; margin: 0;">${originalText || 'No idea provided'}</p>`;
+        }
+        
+        function editNewsletter() {
+            const displayEl = document.getElementById('newsletter-display');
+            const contentEl = displayEl.querySelector('.content-preview');
+            const currentContent = contentEl.textContent;
+            
+            displayEl.innerHTML = `
+                <textarea class="edit-textarea" id="newsletter-edit" style="min-height: 300px;">${currentContent}</textarea>
+                <div class="edit-actions">
+                    <button class="btn-save" onclick="saveNewsletter()">Save</button>
+                    <button class="btn-cancel" onclick="cancelEditNewsletter('${currentContent.replace(/'/g, "\\'").replace(/\n/g, "\\n")}')">Cancel</button>
+                </div>
+            `;
+        }
+        
+        async function saveNewsletter() {
+            const newContent = document.getElementById('newsletter-edit').value;
+            try {
+                // Get current post to preserve other center_post fields
+                const postResponse = await fetch(`/api/content/posts/${postId}`);
+                const post = await postResponse.json();
+                
+                const centerPost = post.center_post ? {...post.center_post} : {};
+                centerPost.content = newContent;
+                // Recalculate word count
+                centerPost.word_count = newContent.split(/\s+/).length;
+                
+                const response = await fetch(`/api/content/posts/${postId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ center_post: centerPost })
+                });
+                if (response.ok) {
+                    // Reload the page to show updated content
+                    loadPost();
+                    alert('Newsletter updated successfully!');
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to update'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        function cancelEditNewsletter(originalContent) {
+            loadPost(); // Reload to restore original
+        }
+        
+        function editSocialPost(derivId) {
+            const contentEl = document.getElementById(`social-content-${derivId}`);
+            const currentContent = contentEl.textContent;
+            
+            contentEl.innerHTML = `
+                <textarea class="edit-textarea" id="social-edit-${derivId}" style="min-height: 200px;">${currentContent}</textarea>
+                <div class="edit-actions">
+                    <button class="btn-save" onclick="saveSocialPost('${derivId}')">Save</button>
+                    <button class="btn-cancel" onclick="cancelEditSocialPost('${derivId}', '${currentContent.replace(/'/g, "\\'").replace(/\n/g, "\\n")}')">Cancel</button>
+                </div>
+            `;
+        }
+        
+        async function saveSocialPost(derivId) {
+            const newContent = document.getElementById(`social-edit-${derivId}`).value;
+            try {
+                const response = await fetch(`/api/content/derivatives/${derivId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ content: newContent })
+                });
+                if (response.ok) {
+                    const contentEl = document.getElementById(`social-content-${derivId}`);
+                    contentEl.innerHTML = newContent || 'No content';
+                    alert('Social post updated successfully!');
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to update'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        function cancelEditSocialPost(derivId, originalContent) {
+            const contentEl = document.getElementById(`social-content-${derivId}`);
+            contentEl.innerHTML = originalContent || 'No content';
         }
         
         async function generateDerivatives() {

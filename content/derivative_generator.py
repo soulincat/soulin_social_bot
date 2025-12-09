@@ -22,6 +22,17 @@ def save_derivatives(data):
     with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
+def update_derivative(deriv_id, updates):
+    """Update a derivative with new data"""
+    data = load_derivatives()
+    for derivative in data['derivatives']:
+        if derivative['id'] == deriv_id:
+            derivative.update(updates)
+            derivative['updated_at'] = datetime.now().isoformat()
+            save_derivatives(data)
+            return derivative
+    raise ValueError(f"Derivative {deriv_id} not found")
+
 def generate_derivatives(post_id, include_podcast=False, platforms=None, client_id=None):
     """
     Generate derivatives from center post for selected platforms
@@ -45,8 +56,9 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
     if not client_id:
         client_id = post.get('client_id')
     
-    # Load brand social settings if client_id available
+    # Load brand social settings and main_product CTA if client_id available
     brand_socials = {}
+    cta_info = None
     if client_id:
         try:
             import json
@@ -57,6 +69,14 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
                     for client in clients_data.get('clients', []):
                         if client.get('client_id') == client_id:
                             brand_socials = client.get('brand', {}).get('socials', {})
+                            # Get CTA info if post has include_cta flag
+                            if post.get('include_cta'):
+                                main_product = client.get('brand', {}).get('main_product', {})
+                                if main_product.get('cta_text') and main_product.get('cta_url'):
+                                    cta_info = {
+                                        'text': main_product['cta_text'],
+                                        'url': main_product['cta_url']
+                                    }
                             break
         except Exception as e:
             print(f"Warning: Could not load brand social settings: {e}")
@@ -129,11 +149,12 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
         social_platforms = [p for p in platforms if p in ['linkedin', 'x', 'threads', 'instagram', 'substack']]
         if social_platforms:
             try:
-                # Pass brand social settings to AI client
+                # Pass brand social settings and CTA info to AI client
                 social_posts = ai_client.generate_social_posts(
                     source_content, 
                     social_platforms,
-                    brand_socials=brand_socials
+                    brand_socials=brand_socials,
+                    cta_info=cta_info
                 )
                 
                 # Get post count per platform from brand settings

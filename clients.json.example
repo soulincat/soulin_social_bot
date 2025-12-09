@@ -139,6 +139,77 @@
         "examples": {
           "good_content": "",
           "bad_content": ""
+        },
+        "main_product": {
+          "product_id": "product_001",
+          "cta_text": "Book your free discovery call",
+          "cta_url": "https://calendly.com/your-link",
+          "marketing_period": {
+            "start": "2025-01-01",
+            "end": "2025-12-31"
+          },
+          "important_dates": [
+            {
+              "date": "2025-02-14",
+              "promotion": "Valentine's Day Special"
+            }
+          ]
+        },
+        "socials": {
+          "linkedin": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 600,
+            "maxLength": 1200,
+            "postCount": 1,
+            "format": ""
+          },
+          "x": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 140,
+            "maxLength": 280,
+            "postCount": 2,
+            "format": ""
+          },
+          "threads": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 250,
+            "maxLength": 500,
+            "postCount": 2,
+            "format": ""
+          },
+          "instagram": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 1100,
+            "maxLength": 2200,
+            "postCount": 1,
+            "format": ""
+          },
+          "substack": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 250,
+            "maxLength": 500,
+            "postCount": 1,
+            "format": ""
+          },
+          "telegram": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 250,
+            "maxLength": 500,
+            "postCount": 1,
+            "format": ""
+          }
         }
       }
       

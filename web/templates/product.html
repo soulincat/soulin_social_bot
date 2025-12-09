@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management - Social Funnel Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/web/styles/dashboard.css">
+    <style>
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .label-help {
+            font-size: 0.75rem;
+            color: #a8b2d1;
+            font-weight: normal;
+            margin-top: 0.25rem;
+        }
+        textarea, input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        input[type="date"] {
+            cursor: pointer;
+        }
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 999px;
+            font-size: 0.85rem;
+            color: #c084fc;
+            margin-bottom: 0.5rem;
+            margin-right: 0.5rem;
+        }
+        .tag-remove {
+            cursor: pointer;
+            color: #a8b2d1;
+            font-weight: bold;
+        }
+        .tag-remove:hover {
+            color: #f87171;
+        }
+        .form-section {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .form-section:last-child {
+            border-bottom: none;
+        }
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            position: sticky;
+            bottom: 2rem;
+            background: rgba(3, 7, 18, 0.95);
+            padding: 1rem;
+            border-radius: 12px;
+            backdrop-filter: blur(12px);
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .status-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .status-info {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #38bdf8;
+        }
+        .status-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        .status-error {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #f87171;
+        }
+        .date-input-row {
+            display: flex;
+            gap: 1rem;
+        }
+        .date-input-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .important-dates-input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .important-dates-input-row input {
+            flex: 1;
+        }
+        .important-dates-input-row input[type="date"] {
+            flex: 1;
+        }
+        .important-dates-input-row input[type="text"] {
+            flex: 2;
+        }
+        .important-dates-input-row button {
+            padding: 0.75rem 1rem;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="noise-canvas"></canvas>
+    <main>
+        <header class="app-header">
+            <div class="brand-mark">
+                <div class="logo-glyph">☾</div>
+                <div>
+                    <p class="pill-badge">Soul in Social</p>
+                    <h1>Product Management</h1>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <a href="/" class="ghost-button">Dashboard</a>
+                <a href="/content" class="ghost-button">Posts</a>
+                <a href="/product" class="ghost-button">Product</a>
+                <a href="/settings" class="ghost-button">Settings</a>
+                <a href="/content/create" class="glass-button">+ New Post</a>
+            </div>
+        </header>
+
+        <section class="glass-card" style="max-width: 900px; margin: 0 auto;">
+            <div class="panel-title">Main Product & CTA</div>
+            <p style="color: #a8b2d1; margin-bottom: 2rem;">Set your main product CTA that can be included in generated content. Configure when to market it and important promotion dates.</p>
+            
+            <form id="product-form">
+                <div class="form-group">
+                    <label for="client_id">Client Account</label>
+                    <select id="client_id" name="client_id" required style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; color: #ffffff; font-family: inherit; font-size: 0.95rem;">
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Product Information</div>
+                    
+                    <div class="form-group">
+                        <label for="main_product_id">Product ID</label>
+                        <span class="label-help">Reference ID for your main product (e.g., "product_001", "coaching_program")</span>
+                        <input type="text" id="main_product_id" name="main_product_id" placeholder="e.g., product_001">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cta_text">CTA Text</label>
+                        <span class="label-help">The call-to-action text to include in content (e.g., "Book your free discovery call")</span>
+                        <input type="text" id="cta_text" name="cta_text" placeholder="e.g., Book your free discovery call">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cta_url">CTA URL</label>
+                        <span class="label-help">The link URL for the CTA</span>
+                        <input type="text" id="cta_url" name="cta_url" placeholder="e.g., https://calendly.com/your-link">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Marketing Period</div>
+                    <p style="color: #a8b2d1; font-size: 0.85rem; margin-bottom: 1.5rem;">Set when to start and stop promoting this product.</p>
+                    
+                    <div class="date-input-row">
+                        <div class="form-group">
+                            <label for="marketing_start">Start Date</label>
+                            <span class="label-help">When to start promoting this product</span>
+                            <input type="date" id="marketing_start" name="marketing_start">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="marketing_end">End Date</label>
+                            <span class="label-help">When to stop promoting this product</span>
+                            <input type="date" id="marketing_end" name="marketing_end">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Important Dates</div>
+                    <p style="color: #a8b2d1; font-size: 0.85rem; margin-bottom: 1.5rem;">Specific dates to promote (e.g., product launches, special events, hard dates to match and promote beforehand).</p>
+                    
+                    <div id="important-dates-container" style="margin-top: 0.5rem;">
+                        <!-- Important dates will be added here -->
+                    </div>
+                    
+                    <div class="important-dates-input-row">
+                        <input type="date" id="important-date-input">
+                        <input type="text" id="important-date-promotion" placeholder="Promotion text (e.g., Valentine's Day Special)">
+                        <button type="button" onclick="addImportantDate()" class="ghost-button">Add</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="glass-button">Save Product Settings</button>
+                    <a href="/content" class="ghost-button">Cancel</a>
+                </div>
+
+                <div id="status-message"></div>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        let currentClientId = null;
+        let importantDates = [];
+
+        // Load clients
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/clients');
+                const data = await response.json();
+                const select = document.getElementById('client_id');
+                data.clients.forEach((client, index) => {
+                    const option = document.createElement('option');
+                    option.value = client.client_id;
+                    option.textContent = client.name;
+                    select.appendChild(option);
+                    if (index === 0) {
+                        select.value = client.client_id;
+                        currentClientId = client.client_id;
+                        loadProductSettings(client.client_id);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading clients:', error);
+            }
+        }
+
+        // Load product settings
+        async function loadProductSettings(clientId) {
+            try {
+                const response = await fetch(`/api/clients/${clientId}/brand`);
+                const data = await response.json();
+                const brand = data.brand || {};
+                const mainProduct = brand.main_product || {};
+                
+                // Populate form fields
+                document.getElementById('main_product_id').value = mainProduct.product_id || '';
+                document.getElementById('cta_text').value = mainProduct.cta_text || '';
+                document.getElementById('cta_url').value = mainProduct.cta_url || '';
+                document.getElementById('marketing_start').value = mainProduct.marketing_period?.start || '';
+                document.getElementById('marketing_end').value = mainProduct.marketing_period?.end || '';
+                importantDates = mainProduct.important_dates || [];
+                renderImportantDates();
+            } catch (error) {
+                console.error('Error loading product settings:', error);
+            }
+        }
+
+        // Important dates management
+        function addImportantDate() {
+            const dateInput = document.getElementById('important-date-input');
+            const promotionInput = document.getElementById('important-date-promotion');
+            const date = dateInput.value;
+            const promotion = promotionInput.value.trim();
+            
+            if (date && promotion) {
+                importantDates.push({ date, promotion });
+                dateInput.value = '';
+                promotionInput.value = '';
+                renderImportantDates();
+            } else {
+                alert('Please enter both date and promotion text');
+            }
+        }
+        
+        function removeImportantDate(index) {
+            importantDates.splice(index, 1);
+            renderImportantDates();
+        }
+        
+        function renderImportantDates() {
+            const container = document.getElementById('important-dates-container');
+            container.innerHTML = '';
+            
+            importantDates.forEach((item, index) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'tag';
+                tagEl.innerHTML = `
+                    <strong>${item.date}</strong>: ${item.promotion}
+                    <span class="tag-remove" onclick="removeImportantDate(${index})">×</span>
+                `;
+                container.appendChild(tagEl);
+            });
+        }
+        
+        window.addImportantDate = addImportantDate;
+        window.removeImportantDate = removeImportantDate;
+
+        // Client selector change
+        document.getElementById('client_id').addEventListener('change', (e) => {
+            currentClientId = e.target.value;
+            if (currentClientId) {
+                loadProductSettings(currentClientId);
+            } else {
+                // Reset form
+                document.getElementById('main_product_id').value = '';
+                document.getElementById('cta_text').value = '';
+                document.getElementById('cta_url').value = '';
+                document.getElementById('marketing_start').value = '';
+                document.getElementById('marketing_end').value = '';
+                importantDates = [];
+                renderImportantDates();
+            }
+        });
+
+        // Form submission
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentClientId) {
+                alert('Please select a client');
+                return;
+            }
+            
+            const form = e.target;
+            const statusEl = document.getElementById('status-message');
+            form.classList.add('loading');
+            statusEl.className = 'status-message status-info';
+            statusEl.innerHTML = '<p>Saving product settings...</p>';
+            
+            // Collect main_product data
+            const mainProductData = {};
+            const productId = document.getElementById('main_product_id').value.trim();
+            const ctaText = document.getElementById('cta_text').value.trim();
+            const ctaUrl = document.getElementById('cta_url').value.trim();
+            const marketingStart = document.getElementById('marketing_start').value;
+            const marketingEnd = document.getElementById('marketing_end').value;
+            
+            if (productId || ctaText || ctaUrl) {
+                mainProductData.product_id = productId || null;
+                mainProductData.cta_text = ctaText || '';
+                mainProductData.cta_url = ctaUrl || '';
+                
+                if (marketingStart || marketingEnd) {
+                    mainProductData.marketing_period = {};
+                    if (marketingStart) mainProductData.marketing_period.start = marketingStart;
+                    if (marketingEnd) mainProductData.marketing_period.end = marketingEnd;
+                }
+                
+                if (importantDates.length > 0) {
+                    mainProductData.important_dates = importantDates;
+                }
+            }
+            
+            // Get existing brand settings and merge main_product
+            try {
+                const brandResponse = await fetch(`/api/clients/${currentClientId}/brand`);
+                const brandData = await brandResponse.json();
+                const existingBrand = brandData.brand || {};
+                
+                const updateData = {
+                    brand: {
+                        ...existingBrand,
+                        main_product: Object.keys(mainProductData).length > 0 ? mainProductData : undefined
+                    }
+                };
+                
+                const response = await fetch(`/api/clients/${currentClientId}/brand`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(updateData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.className = 'status-message status-success';
+                    statusEl.innerHTML = '<p>✅ Product settings saved successfully!</p>';
+                    setTimeout(() => {
+                        statusEl.innerHTML = '';
+                    }, 3000);
+                } else {
+                    statusEl.className = 'status-message status-error';
+                    statusEl.innerHTML = `<p>❌ Error: ${data.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                statusEl.className = 'status-message status-error';
+                statusEl.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+        
+        // Initialize
+        loadClients();
+        
+        // Noise canvas
+        (function() {
+            const canvas = document.getElementById('noise-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            function generateNoise() {
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const value = Math.random() * 255;
+                    data[i] = value;
+                    data[i + 1] = value;
+                    data[i + 2] = value;
+                    data[i + 3] = 15;
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+            resizeCanvas();
+            generateNoise();
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                generateNoise();
+            });
+        })();
+    </script>
+</body>
+</html>
+
