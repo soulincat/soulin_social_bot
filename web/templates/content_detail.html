@@ -479,6 +479,9 @@
                 const wordCount = deriv.content ? deriv.content.split(/\s+/).length : 0;
                 const isDraft = status === 'draft';
                 const isApproved = status === 'approved';
+                const isQueued = status === 'queued';
+                const isPublished = status === 'published';
+                const isNewsletter = deriv.type === 'newsletter';
                 
                 // Format scheduled time if queued
                 let scheduledTimeDisplay = '';
@@ -491,16 +494,45 @@
                     }
                 }
                 
+                // Format published info if published
+                let publishedDisplay = '';
+                if (isPublished) {
+                    if (deriv.published_url) {
+                        publishedDisplay = `<br><a href="${deriv.published_url}" target="_blank" style="color: #10b981; font-size: 0.75rem;">View on Beehiiv →</a>`;
+                    } else {
+                        publishedDisplay = `<br><span style="color: #10b981; font-size: 0.75rem;">✓ Published</span>`;
+                    }
+                }
+                
+                // Action buttons
+                let actionButtons = '';
+                if (isNewsletter) {
+                    if (isPublished) {
+                        actionButtons = `<button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>`;
+                    } else if (isApproved || isQueued) {
+                        actionButtons = `
+                            <button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>
+                            <button class="glass-button" style="margin-left: 0.5rem;" onclick="publishNewsletter('${deriv.id}')">Publish to Beehiiv</button>
+                        `;
+                    } else {
+                        actionButtons = `<button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>`;
+                    }
+                } else {
+                    actionButtons = `<button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>`;
+                }
+                
                 return `
                     <div class="derivative-item" data-platform="${deriv.type.toLowerCase()}" style="margin-bottom: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                             <div class="social-platform">${platformName}</div>
-                            <button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                ${actionButtons}
+                            </div>
                         </div>
                         <div class="social-meta">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <p style="color: #a8b2d1; margin: 0; font-size: 0.85rem;">
-                                    Status: <span style="color: ${status === 'published' ? '#22c55e' : status === 'queued' ? '#38bdf8' : status === 'approved' ? '#a855f7' : '#a8b2d1'}">${status}</span>${scheduledTimeDisplay}
+                                    Status: <span style="color: ${status === 'published' ? '#22c55e' : status === 'queued' ? '#38bdf8' : status === 'approved' ? '#a855f7' : '#a8b2d1'}">${status}</span>${scheduledTimeDisplay}${publishedDisplay}
                                 </p>
                                 <span class="word-count">${wordCount} words</span>
                             </div>

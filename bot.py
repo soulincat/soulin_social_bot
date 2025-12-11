@@ -94,6 +94,22 @@ def get_instagram_metrics(user_id, access_token):
     
     return {'impressions': impressions, 'reach': reach}
 
+def get_instagram_profile(user_id, access_token):
+    """Fetch IG profile info (followers, profile pic, bio)"""
+    try:
+        url = f"https://graph.facebook.com/v18.0/{user_id}"
+        params = {
+            'fields': 'username,biography,profile_picture_url,followers_count',
+            'access_token': access_token
+        }
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except Exception as e:
+        print(f"Error fetching Instagram profile: {e}")
+        return None
+
 def get_vercel_metrics(project_id, token):
     """Fetch web analytics from Vercel"""
     url = f"https://api.vercel.com/v1/projects/{project_id}/analytics"

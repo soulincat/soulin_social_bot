@@ -210,8 +210,98 @@
             "postCount": 1,
             "format": ""
           }
-        }
-      }
+        },
+        "default_schedule": {
+          "newsletter_time": "09:00",
+          "newsletter_day": "friday",
+          "social_stagger_hours": 24,
+          "timezone": "UTC"
+        },
+        "special_events": [
+          {
+            "id": "event_001",
+            "type": "holiday",
+            "name": "Christmas Special",
+            "date": "2025-12-25",
+            "post_id": null,
+            "announcement": "Special holiday content"
+          },
+          {
+            "id": "event_002",
+            "type": "launch",
+            "name": "New Year Product Launch",
+            "date": "2026-01-01",
+            "post_id": null,
+            "announcement": "Major product announcement"
+          }
+        ]
+      },
+      "brand": {
+        "mission": "",
+        "positioning": "",
+        "voice": {
+          "tone": "",
+          "style": "",
+          "personality": []
+        },
+        "values": [],
+        "content_goals": [],
+        "do_not_use": [],
+        "examples": {
+          "good_content": "",
+          "bad_content": ""
+        },
+        "main_product": {
+          "product_id": "product_001",
+          "cta_text": "Book your free discovery call",
+          "cta_url": "https://calendly.com/your-link",
+          "marketing_period": {
+            "start": "2025-01-01",
+            "end": "2025-12-31"
+          },
+          "important_dates": [
+            {
+              "date": "2025-02-14",
+              "promotion": "Valentine's Day Special"
+            }
+          ]
+        },
+        "socials": {
+          "linkedin": {
+            "enabled": true,
+            "voice": "",
+            "tone": "",
+            "minLength": 250,
+            "maxLength": 500,
+            "postCount": 1,
+            "format": ""
+          }
+        },
+        "default_schedule": {
+          "newsletter_time": "09:00",
+          "newsletter_day": "friday",
+          "social_stagger_hours": 24,
+          "timezone": "UTC"
+        },
+        "special_events": [
+          {
+            "id": "event_001",
+            "type": "holiday",
+            "name": "Christmas Special",
+            "date": "2025-12-25",
+            "post_id": null,
+            "announcement": "Special holiday content"
+          },
+          {
+            "id": "event_002",
+            "type": "launch",
+            "name": "New Year Product Launch",
+            "date": "2026-01-01",
+            "post_id": null,
+            "announcement": "Major product announcement"
+          }
+        ]
+      },
       
       "connected_accounts": {
         "instagram": {

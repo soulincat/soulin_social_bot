@@ -11,7 +11,7 @@
         "status": "queued"
       },
       "created_at": "2025-12-09T00:13:29.593981",
-      "scheduled_for": null,
+      "scheduled_for": "2025-12-13T09:00:00Z",
       "published_at": null,
       "engagement_metrics": {}
     },
@@ -25,7 +25,7 @@
         "status": "queued"
       },
       "created_at": "2025-12-09T00:13:33.309032",
-      "scheduled_for": null,
+      "scheduled_for": "2025-12-13T09:30:00Z",
       "published_at": null,
       "engagement_metrics": {}
     },
@@ -50,7 +50,7 @@
         "status": "queued"
       },
       "created_at": "2025-12-09T00:13:55.418926",
-      "scheduled_for": null,
+      "scheduled_for": "2025-12-13T10:00:00Z",
       "published_at": null,
       "engagement_metrics": {}
     },
@@ -67,7 +67,7 @@
         "status": "queued"
       },
       "created_at": "2025-12-09T00:13:55.418956",
-      "scheduled_for": null,
+      "scheduled_for": "2025-12-13T14:00:00Z",
       "published_at": null,
       "engagement_metrics": {}
     },
@@ -82,7 +82,7 @@
         "status": "queued"
       },
       "created_at": "2025-12-09T00:13:55.418968",
-      "scheduled_for": null,
+      "scheduled_for": "2025-12-13T11:00:00Z",
       "published_at": null,
       "engagement_metrics": {}
     },
@@ -107,7 +107,139 @@
         "status": "queued"
       },
       "created_at": "2025-12-09T00:13:55.418979",
-      "scheduled_for": null,
+      "scheduled_for": "2025-12-13T15:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_newsletter_001",
+      "post_id": "post_dummy_weekly_001",
+      "type": "newsletter",
+      "content": "Hi there,\n\nBuilding a content system that scales with your business isn't about creating more content—it's about creating the right content, consistently.\n\nLet me show you how...",
+      "metadata": {
+        "subject": "How to Build a Content System That Scales",
+        "platform": "beehiiv",
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-13T09:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_x_001",
+      "post_id": "post_dummy_weekly_001",
+      "type": "x",
+      "content": "Building a content system that scales isn't about creating more content.\n\nIt's about creating the RIGHT content, consistently.\n\nHere's how 👇",
+      "metadata": {
+        "platform": "x",
+        "post_number": 1,
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-13T10:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_x_002",
+      "post_id": "post_dummy_weekly_001",
+      "type": "x",
+      "content": "The secret to scaling content:\n\n1. Know your audience deeply\n2. Create a repeatable process\n3. Use the right tools\n4. Measure what matters\n\nWhich one are you missing?",
+      "metadata": {
+        "platform": "x",
+        "post_number": 2,
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-13T14:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_x_003",
+      "post_id": "post_dummy_weekly_001",
+      "type": "x",
+      "content": "Most people think scaling content = more content.\n\nWrong.\n\nScaling content = better systems.\n\nBetter systems = consistent quality.\n\nConsistent quality = trust.\n\nTrust = growth.",
+      "metadata": {
+        "platform": "x",
+        "post_number": 3,
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-13T18:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_x_004",
+      "post_id": "post_dummy_weekly_001",
+      "type": "x",
+      "content": "Your content system should work FOR you, not against you.\n\nIf you're spending more time managing content than creating it, your system needs work.\n\nWhat's slowing you down?",
+      "metadata": {
+        "platform": "x",
+        "post_number": 4,
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-14T10:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_x_005",
+      "post_id": "post_dummy_weekly_001",
+      "type": "x",
+      "content": "The best content systems:\n\n✅ Scale without breaking\n✅ Maintain quality at volume\n✅ Save time, not create more work\n✅ Adapt as you grow\n\nBuild yours today.",
+      "metadata": {
+        "platform": "x",
+        "post_number": 5,
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-14T14:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_linkedin_001",
+      "post_id": "post_dummy_weekly_001",
+      "type": "linkedin",
+      "content": "Building a content system that scales with your business requires understanding your audience, creating a repeatable process, and leveraging the right tools.\n\nHere's what I've learned after helping dozens of businesses scale their content operations...",
+      "metadata": {
+        "platform": "linkedin",
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-13T11:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_linkedin_002",
+      "post_id": "post_dummy_weekly_001",
+      "type": "linkedin",
+      "content": "The biggest mistake I see businesses make when scaling content?\n\nThey focus on quantity over systems.\n\nHere's why that's backwards...",
+      "metadata": {
+        "platform": "linkedin",
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-14T11:00:00Z",
+      "published_at": null,
+      "engagement_metrics": {}
+    },
+    {
+      "id": "deriv_dummy_telegram_001",
+      "post_id": "post_dummy_weekly_001",
+      "type": "telegram",
+      "content": "📝 New post: How to Build a Content System That Scales\n\nScaling content isn't about more—it's about better systems.\n\n[Read the full guide →]",
+      "metadata": {
+        "platform": "telegram",
+        "status": "queued"
+      },
+      "created_at": "2025-12-10T10:00:00",
+      "scheduled_for": "2025-12-13T09:30:00Z",
       "published_at": null,
       "engagement_metrics": {}
     }

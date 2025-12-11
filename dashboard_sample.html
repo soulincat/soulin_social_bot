@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="web/styles/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <canvas id="noise-canvas"></canvas>
@@ -33,106 +34,85 @@
 
         <section class="hero glass-card">
             <div>
-                <p class="date-chip">Nov 18-24, 2025</p>
+                <p class="date-chip" id="current-week-date">Loading...</p>
             <h1>weekly funnel dashboard</h1>
                 <p style="color: #a8b2d1; margin-top: 0.35rem;">Auto-generated model for Soul in Social</p>
             </div>
             <div class="mini-boxes-row">
-                <div class="mini-box">
+                <div class="mini-box" id="fans-box" style="cursor: pointer;" onclick="scrollToGrowth()">
                     <div class="mini-box-label">Fans</div>
-                    <div class="mini-box-value">$12,450</div>
-                    <div class="mini-box-subtitle">Monthly Total</div>
-                    <div class="mini-box-trend trend-up">+18.5% MoM</div>
+                    <div class="mini-box-value" id="total-followers">0</div>
+                    <div class="mini-box-subtitle">Total Followers</div>
+                    <div class="mini-box-trend trend-up" id="fans-trend">--</div>
                 </div>
-                <div class="mini-box">
+                <div class="mini-box" id="earn-box" style="cursor: pointer;" onclick="scrollToGrowth()">
                     <div class="mini-box-label">Earn</div>
-                    <div class="mini-box-value">$8,920</div>
+                    <div class="mini-box-value" id="monthly-earnings">$0</div>
                     <div class="mini-box-subtitle">Monthly Total</div>
-                    <div class="mini-box-trend trend-up">+22.3% MoM</div>
+                    <div class="mini-box-trend trend-up" id="earn-trend">--</div>
                 </div>
             </div>
             <span class="glow-ring"></span>
         </section>
 
-        <section class="dashboard-grid">
-            <article class="glass-card stat-card">
-                <h3>Blog Visitors</h3>
-                <p class="stat-value">1,234 <span class="stat-trend trend-up">+12%</span></p>
-                <p style="color: #a8b2d1;">Weekly reach</p>
-            </article>
-            <article class="glass-card stat-card">
-                <h3>New Subscribers</h3>
-                <p class="stat-value">23 <span class="stat-trend trend-down">-2</span></p>
-                <p style="color: #a8b2d1;">Blog → Email conversion 1.9%</p>
-            </article>
-            <article class="glass-card stat-card">
-                <h3>Open Rate</h3>
-                <p class="stat-value">45.2% <span class="stat-trend trend-up">+5%</span></p>
-                <p style="color: #a8b2d1;">Newsletter engagement</p>
-            </article>
-            <article class="glass-card stat-card">
-                <h3>Inquiries → Clients</h3>
-                <p class="stat-value">50% <span class="stat-trend trend-up">Best-in-class</span></p>
-                <p style="color: #a8b2d1;">Closing strength</p>
-            </article>
-        </section>
-
-        <section class="glass-card glass-panel">
-            <div class="panel-title">Funnel Flow Overview</div>
-            <div class="flow-map">
-                <div class="flow-step">
-                    <div class="flow-number">1,234</div>
-                    <div class="flow-label">Blog Visitors</div>
-                    <div class="flow-rate">1.9% →</div>
-                </div>
-                <div class="flow-connector">↓</div>
-                <div class="flow-step">
-                    <div class="flow-number">23</div>
-                    <div class="flow-label">Email Signups</div>
-                    <div class="flow-rate">0.4% →</div>
-                </div>
-                <div class="flow-connector">↓</div>
-                <div class="flow-step">
-                    <div class="flow-number">2</div>
-                    <div class="flow-label">Inquiries</div>
-                    <div class="flow-rate">50% →</div>
-                </div>
-                <div class="flow-connector">↓</div>
-                <div class="flow-step">
-                    <div class="flow-number">1</div>
-                    <div class="flow-label">New Client</div>
-                    <div class="flow-rate">100%</div>
-                </div>
+        <section class="glass-card glass-panel" id="funnel-flow-section">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="panel-title">Funnel Flow Overview</div>
+                <button class="status-icon-btn status-pending" data-area="funnel_flow" onclick="showAnalysis('funnel_flow', event)" aria-label="Get analysis"></button>
+            </div>
+            <div class="funnel-flow-container" id="funnel-flow-map">
+                <!-- Will be populated by JavaScript -->
+                <p style="color: #a8b2d1; text-align: center; padding: 2rem;">Loading funnel data...</p>
             </div>
         </section>
 
         <section class="stage-grid">
-            <article class="glass-card stage-card">
-                <div class="stage-icon">🎯</div>
-                <h3>Awareness</h3>
+            <article class="glass-card stage-card" data-analysis-area="stage_awareness">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div class="stage-icon">🎯</div>
+                        <h3>Awareness</h3>
+                    </div>
+                    <button class="status-icon-btn status-pending" data-area="stage_awareness" onclick="showAnalysis('stage_awareness', event)" aria-label="Get analysis"></button>
+                </div>
                 <div class="metric-line"><strong>Blog Visitors</strong><span>1,234</span></div>
                 <div class="metric-line"><strong>Instagram Impressions</strong><span>5,678</span></div>
                 <div class="metric-line"><strong>LinkedIn Impressions</strong><span>890</span></div>
                 <span class="stage-status status-good">Above Target</span>
             </article>
-            <article class="glass-card stage-card">
-                <div class="stage-icon">🧲</div>
-                <h3>Lead Capture</h3>
+            <article class="glass-card stage-card" data-analysis-area="stage_capture">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div class="stage-icon">🧲</div>
+                        <h3>Lead Capture</h3>
+                    </div>
+                    <button class="status-icon-btn status-pending" data-area="stage_capture" onclick="showAnalysis('stage_capture', event)" aria-label="Get analysis"></button>
+                </div>
                 <div class="metric-line"><strong>Subscribers</strong><span>23 new</span></div>
                 <div class="metric-line"><strong>Total List</strong><span>456</span></div>
                 <div class="metric-line"><strong>Blog → Email</strong><span>1.9%</span></div>
                 <span class="stage-status status-risk">Needs Lift</span>
             </article>
-            <article class="glass-card stage-card">
-                <div class="stage-icon">💌</div>
-                <h3>Nurture</h3>
+            <article class="glass-card stage-card" data-analysis-area="stage_nurture">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div class="stage-icon">💌</div>
+                        <h3>Nurture</h3>
+                    </div>
+                    <button class="status-icon-btn status-pending" data-area="stage_nurture" onclick="showAnalysis('stage_nurture', event)" aria-label="Get analysis"></button>
+                </div>
                 <div class="metric-line"><strong>Open Rate</strong><span>45.2%</span></div>
                 <div class="metric-line"><strong>Click Rate</strong><span>8.3%</span></div>
                 <span class="stage-status status-good">Top tier</span>
             </article>
-            <article class="glass-card stage-card">
-                <div class="stage-icon">💰</div>
-                <h3>Conversion</h3>
+            <article class="glass-card stage-card" data-analysis-area="stage_conversion">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div class="stage-icon">💰</div>
+                        <h3>Conversion</h3>
+                    </div>
+                    <button class="status-icon-btn status-pending" data-area="stage_conversion" onclick="showAnalysis('stage_conversion', event)" aria-label="Get analysis"></button>
+                </div>
                 <div class="metric-line"><strong>Inquiries</strong><span>2</span></div>
                 <div class="metric-line"><strong>Calls Booked</strong><span>1</span></div>
                 <div class="metric-line"><strong>Close Rate</strong><span>100%</span></div>
@@ -141,127 +121,35 @@
         </section>
 
         <section class="glass-card glass-panel">
-            <div class="panel-title">Community Group Pulse</div>
-            <p class="panel-subtitle">Glassmorphism groups primed for web experiences</p>
-            <div class="group-grid">
-                <article class="glass-group">
-                    <div class="group-header">
-                        <span>Lead Magnet Lab</span>
-                        <span class="micro-tag">Top focus</span>
-                    </div>
-                    <div class="group-meta">
-                        <span>178 members</span>
-                        <span>8 pods live</span>
-                    </div>
-                    <div class="group-progress"><span style="width: 68%;"></span></div>
-                    <p class="group-status">68% of the 30-day challenge complete.</p>
-                    <div class="popup-actions">
-                        <button class="glass-button secondary" data-modal-target="#group-modal">See stack</button>
-                        <button class="ghost-button" data-modal-target="#bottleneck-modal">Bottleneck math</button>
-                    </div>
-                </article>
-                <article class="glass-group">
-                    <div class="group-header">
-                        <span>Unicorn Clients</span>
-                        <span class="micro-tag">Private</span>
-                    </div>
-                    <div class="group-meta">
-                        <span>64 founders</span>
-                        <span>2 drops/mo</span>
-                    </div>
-                    <div class="group-progress"><span style="width: 52%;"></span></div>
-                    <p class="group-status">Need popup follow-up to lift application flow.</p>
-                    <div class="popup-actions">
-                        <button class="glass-button secondary" data-modal-target="#playbook-modal">Open playbook</button>
-                        <button class="ghost-button" data-modal-target="#milestone-modal">Celebrate</button>
-                    </div>
-                </article>
-                <article class="glass-group">
-                    <div class="group-header">
-                        <span>MiniMind Circle</span>
-                        <span class="micro-tag">Beta</span>
-                    </div>
-                    <div class="group-meta">
-                        <span>32 clients</span>
-                        <span>Next cohort Dec 2</span>
-                    </div>
-                    <div class="group-progress"><span style="width: 88%;"></span></div>
-                    <p class="group-status">Glassmorphism popup scheduled for waitlist.</p>
-                    <div class="popup-actions">
-                        <button class="glass-button secondary" data-modal-target="#popup-preview-modal">Preview popup</button>
-                        <button class="ghost-button" data-modal-target="#milestone-modal">Share milestone</button>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <section class="glass-card grouped-insights">
-            <div class="insight-bubble">
-                <strong>🎯 Current Bottleneck</strong>
-                Lead capture is 1.9% vs target 4%. Double signup rate to push 26 more leads per week.
-            </div>
-            <div class="insight-bubble">
-                <strong>🔮 Opportunity</strong>
-                Add ebook popup + case study drip to capitalize on high nurture trust and elite closing.
-            </div>
-            <div class="insight-bubble">
-                <strong>🧊 Drop-Off Map</strong>
-                <span class="dropoff-chip chip-red">Capture 1.9%</span>
-                <span class="dropoff-chip chip-green">Open 45.2%</span>
-                <span class="dropoff-chip chip-green">Close 50%</span>
+            <div class="panel-title">Socials Summary</div>
+            <p class="panel-subtitle">Your social media profiles and follower counts</p>
+            <div class="popup-stack" id="socials-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+                <p style="color: #a8b2d1; text-align: center; padding: 2rem; grid-column: 1 / -1;">Loading social profiles...</p>
             </div>
         </section>
 
         <section class="glass-card glass-panel">
-            <div class="panel-title">Glassmorphism Popup Stack</div>
-            <p class="panel-subtitle">Web-ready modals and inline popups</p>
-            <div class="popup-stack">
-                <article class="popup-card">
-                    <strong>🧊 Frosted Ebook Popup</strong>
-                    <p class="popup-meta">Triggers on exit intent · adds blur overlay with frosted CTA.</p>
-                    <div class="popup-actions">
-                        <button class="glass-button secondary" data-modal-target="#popup-preview-modal">Preview</button>
-                        <button class="ghost-button">Add to site</button>
-                    </div>
-                </article>
-                <article class="popup-card">
-                    <strong>💬 Group Waitlist Bubble</strong>
-                    <p class="popup-meta">Bottom-right chip that expands into a glass card for MiniMind.</p>
-                    <div class="popup-actions">
-                        <button class="glass-button secondary" data-modal-target="#group-modal">View flow</button>
-                        <button class="ghost-button">Copy embed</button>
-                    </div>
-                </article>
-                <article class="popup-card">
-                    <strong>🎉 Milestone Modal</strong>
-                    <p class="popup-meta">Auto fires when list hits 500; includes confetti gradient.</p>
-                    <div class="popup-actions">
-                        <button class="glass-button secondary" data-modal-target="#milestone-modal">Open</button>
-                        <button class="ghost-button">Schedule</button>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <section class="glass-card recommendations">
-            <div class="panel-title">This Week's Moves</div>
-            <div class="recommendation-item">
-                <h4>Priority 1 · Launch Ebook Popup</h4>
-                <p>Capture the 98% of visitors currently bouncing without subscribing.</p>
-                <p class="recommendation-meta">Impact: +26 subscribers/week · +$700-1K MRR</p>
-            </div>
-            <div class="recommendation-item">
-                <h4>Priority 2 · Case Study Drip</h4>
-                <p>Inject proof stories into your nurture to lift email → inquiry rate.</p>
-                <p class="recommendation-meta">Impact: 0.4% → 1% inquiries · +2 calls/week</p>
+            <div class="panel-title">This Week's Posts</div>
+            <p class="panel-subtitle" id="weekly-posts-subtitle">Content scheduled for this week</p>
+            <div id="weekly-posts-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <p style="color: #a8b2d1; text-align: center; padding: 2rem;">Loading posts...</p>
             </div>
         </section>
 
         <section class="glass-card glass-panel">
+            <div class="panel-title">Products</div>
+            <p class="panel-subtitle">Monthly sales and buyers per product</p>
+            <div class="group-grid" id="products-grid">
+                <p style="color: #a8b2d1; text-align: center; padding: 2rem;">Loading products...</p>
+            </div>
+        </section>
+
+        <section class="glass-card glass-panel" id="growth-trajectory">
             <div class="panel-title">Growth Trajectory</div>
-            <div class="metric-line"><strong>Current Path</strong><span>~8 inquiries · ~2 clients</span></div>
-            <div class="metric-line"><strong>Target Path</strong><span>~20 inquiries · ~5 clients</span></div>
-            <p style="color:#a8b2d1;">Fixing the bottleneck adds +$2-3K MRR.</p>
+            <p class="panel-subtitle">Monthly growth trends for earnings and followers</p>
+            <div style="position: relative; height: 400px; margin-top: 2rem;">
+                <canvas id="growth-chart"></canvas>
+            </div>
         </section>
 
         <footer class="footer">
@@ -347,6 +235,9 @@
     </div>
 
     <script>
+        // Global chart variable
+        let growthChart = null;
+        
         // Generate noise texture
         (function() {
             const canvas = document.getElementById('noise-canvas');
@@ -414,6 +305,1145 @@
                 modals.forEach(modal => modal.classList.remove('is-visible'));
             }
         });
+
+        // Calculate current week date
+        function getCurrentWeekDate() {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
+            const monday = new Date(now.setDate(diff));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const mondayStr = `${months[monday.getMonth()]} ${monday.getDate()}`;
+            const sundayStr = `${months[sunday.getMonth()]} ${sunday.getDate()}, ${sunday.getFullYear()}`;
+            
+            return `${mondayStr}-${sundayStr}`;
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            // Set current week date
+            document.getElementById('current-week-date').textContent = getCurrentWeekDate();
+            
+            // Get first client ID (or allow selection)
+            try {
+                const clientsResponse = await fetch('/api/clients');
+                const clientsData = await clientsResponse.json();
+                if (clientsData.clients && clientsData.clients.length > 0) {
+                    const clientId = clientsData.clients[0].client_id;
+                    
+                    // Load social profiles (updates currentFollowers)
+                    await loadSocialProfiles(clientId);
+                    
+                    // Load weekly posts (don't let errors break the page)
+                    try {
+                        await loadWeeklyPosts(clientId);
+                    } catch (error) {
+                        console.error('Error loading weekly posts:', error);
+                    }
+                    
+                    // Load products (needed for earnings calculation)
+                    await loadProducts(clientId);
+                    
+                    // Load growth data (uses currentFollowers and calculates earnings)
+                    await loadGrowthData(clientId);
+                    
+                    // Load funnel flow visualization
+                    await loadFunnelFlow(clientId);
+                    
+                    // Load status icons for all areas
+                    loadStatusIcons(clientId);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function loadHeroMetrics(clientId) {
+            try {
+                // Get funnel metrics from API or calculate
+                const response = await fetch(`/api/dashboard/analysis?client_id=${clientId}&area=blog_visitors`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const analysis = data.analysis || data;
+                    
+                    // Calculate total impressions (sum of all awareness channels)
+                    // For now, use dummy data - in production would fetch from APIs
+                    const totalImpressions = 7802; // Blog (1234) + Instagram (5678) + LinkedIn (890)
+                    const emailCapture = analysis.current_value || 23;
+                    const captureRate = analysis.target_value ? ((emailCapture / totalImpressions) * 100).toFixed(1) : '1.9';
+                    
+                    // Get client calls (from conversion metrics)
+                    const clientCalls = 1; // Would come from manual metrics or API
+                    
+                    // Update hero boxes
+                    document.getElementById('total-impressions').textContent = formatNumber(totalImpressions);
+                    document.getElementById('email-capture').textContent = formatNumber(emailCapture);
+                    document.getElementById('email-capture-rate').textContent = `${captureRate}% capture rate`;
+                    document.getElementById('client-calls').textContent = formatNumber(clientCalls);
+                }
+            } catch (error) {
+                console.error('Error loading hero metrics:', error);
+                // Fallback values
+                document.getElementById('total-impressions').textContent = '7,802';
+                document.getElementById('email-capture').textContent = '23';
+                document.getElementById('email-capture-rate').textContent = '1.9% capture rate';
+                document.getElementById('client-calls').textContent = '1';
+            }
+        }
+
+        async function loadFunnelFlow(clientId) {
+            try {
+                const response = await fetch(`/api/dashboard/analysis?client_id=${clientId}&area=funnel_flow`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch funnel data');
+                }
+                
+                const data = await response.json();
+                const analysis = data.analysis || data;
+                
+                // Get actual metrics (would come from APIs in production)
+                const metrics = {
+                    totalImpressions: 7802, // Sum of all awareness
+                    emailSignups: 23,
+                    inquiries: 2,
+                    newClients: 1
+                };
+                
+                // Calculate conversion rates
+                const captureRate = ((metrics.emailSignups / metrics.totalImpressions) * 100).toFixed(1);
+                const inquiryRate = ((metrics.inquiries / metrics.emailSignups) * 100).toFixed(1);
+                const closeRate = ((metrics.newClients / metrics.inquiries) * 100).toFixed(0);
+                
+                // Calculate drop-offs
+                const lostAtCapture = metrics.totalImpressions - metrics.emailSignups;
+                const lostAtInquiry = metrics.emailSignups - metrics.inquiries;
+                const lostAtClose = metrics.inquiries - metrics.newClients;
+                
+                // Calculate percentages for funnel visualization
+                const stage1Percent = 100; // Awareness (full width)
+                const stage2Percent = (metrics.emailSignups / metrics.totalImpressions) * 100;
+                const stage3Percent = (metrics.inquiries / metrics.totalImpressions) * 100;
+                const stage4Percent = (metrics.newClients / metrics.totalImpressions) * 100;
+                
+                // Render enhanced funnel flow
+                const flowMap = document.getElementById('funnel-flow-map');
+                if (!flowMap) {
+                    console.error('funnel-flow-map element not found');
+                    return;
+                }
+                
+                // Set CSS variables for funnel background visualization
+                // These represent the width of each stage as percentage of total
+                flowMap.style.setProperty('--funnel-stage1', `${stage1Percent}%`);
+                flowMap.style.setProperty('--funnel-stage2', `${stage2Percent}%`);
+                flowMap.style.setProperty('--funnel-stage3', `${stage3Percent}%`);
+                flowMap.style.setProperty('--funnel-stage4', `${stage4Percent}%`);
+                
+                flowMap.innerHTML = `
+                        <!-- Awareness Stage -->
+                        <div class="funnel-stage" data-analysis-area="funnel_awareness">
+                            <div class="funnel-stage-header">
+                                <div class="funnel-stage-label">Awareness</div>
+                                <button class="status-icon-btn status-pending" data-area="funnel_awareness" onclick="showAnalysis('funnel_awareness', event)" aria-label="Get analysis"></button>
+                            </div>
+                            <div class="funnel-number-large">${formatNumber(metrics.totalImpressions)}</div>
+                            <div class="funnel-subtitle">Total Impressions</div>
+                        </div>
+                        
+                        <!-- Drop-off Indicator -->
+                        <div class="funnel-dropoff">
+                            <div class="dropoff-arrow">→</div>
+                            <div class="dropoff-info">
+                                <span class="dropoff-number">-${formatNumber(lostAtCapture)}</span>
+                                <span class="dropoff-label">${(100 - parseFloat(captureRate)).toFixed(1)}%</span>
+                            </div>
+                            <div class="conversion-badge">${captureRate}%</div>
+                        </div>
+                        
+                        <!-- Capture Stage -->
+                        <div class="funnel-stage" data-analysis-area="funnel_capture">
+                            <div class="funnel-stage-header">
+                                <div class="funnel-stage-label">Email Capture</div>
+                                <button class="status-icon-btn status-pending" data-area="funnel_capture" onclick="showAnalysis('funnel_capture', event)" aria-label="Get analysis"></button>
+                            </div>
+                            <div class="funnel-number-large">${formatNumber(metrics.emailSignups)}</div>
+                            <div class="funnel-subtitle">New Subscribers</div>
+                        </div>
+                        
+                        <!-- Drop-off Indicator -->
+                        <div class="funnel-dropoff">
+                            <div class="dropoff-arrow">→</div>
+                            <div class="dropoff-info">
+                                <span class="dropoff-number">-${formatNumber(lostAtInquiry)}</span>
+                                <span class="dropoff-label">${(100 - parseFloat(inquiryRate)).toFixed(1)}%</span>
+                            </div>
+                            <div class="conversion-badge">${inquiryRate}%</div>
+                        </div>
+                        
+                        <!-- Inquiry Stage -->
+                        <div class="funnel-stage" data-analysis-area="funnel_nurture">
+                            <div class="funnel-stage-header">
+                                <div class="funnel-stage-label">Inquiries</div>
+                                <button class="status-icon-btn status-pending" data-area="funnel_nurture" onclick="showAnalysis('funnel_nurture', event)" aria-label="Get analysis"></button>
+                            </div>
+                            <div class="funnel-number-large">${formatNumber(metrics.inquiries)}</div>
+                            <div class="funnel-subtitle">Reached Out</div>
+                        </div>
+                        
+                        <!-- Drop-off Indicator -->
+                        <div class="funnel-dropoff">
+                            <div class="dropoff-arrow">→</div>
+                            <div class="dropoff-info">
+                                <span class="dropoff-number">-${formatNumber(lostAtClose)}</span>
+                                <span class="dropoff-label">${(100 - parseFloat(closeRate)).toFixed(0)}%</span>
+                            </div>
+                            <div class="conversion-badge">${closeRate}%</div>
+                        </div>
+                        
+                        <!-- Conversion Stage -->
+                        <div class="funnel-stage" data-analysis-area="funnel_conversion">
+                            <div class="funnel-stage-header">
+                                <div class="funnel-stage-label">New Client</div>
+                                <button class="status-icon-btn status-pending" data-area="funnel_conversion" onclick="showAnalysis('funnel_conversion', event)" aria-label="Get analysis"></button>
+                            </div>
+                            <div class="funnel-number-large">${formatNumber(metrics.newClients)}</div>
+                            <div class="funnel-subtitle">Converted</div>
+                        </div>
+                `;
+                
+                // After rendering, update status icons for funnel stages
+                setTimeout(() => {
+                    loadStatusIcons(clientId);
+                }, 100);
+            } catch (error) {
+                console.error('Error loading funnel flow:', error);
+                // Fallback visualization
+                const flowMap = document.getElementById('funnel-flow-map');
+                if (flowMap) {
+                    flowMap.innerHTML = '<p style="color: #a8b2d1; text-align: center; padding: 2rem;">Error loading funnel data</p>';
+                }
+            }
+        }
+
+        function scrollToFunnel() {
+            const funnelSection = document.getElementById('funnel-flow-section');
+            if (funnelSection) {
+                funnelSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        async function loadStatusIcons(clientId) {
+            const areas = [
+                'funnel_flow',
+                'stage_awareness',
+                'stage_capture',
+                'stage_nurture',
+                'stage_conversion',
+                'funnel_awareness',
+                'funnel_capture',
+                'funnel_nurture',
+                'funnel_conversion'
+            ];
+            
+            // Also check for dynamically rendered funnel stages
+            const dynamicStages = document.querySelectorAll('.funnel-stage[data-analysis-area]');
+            dynamicStages.forEach(stage => {
+                const area = stage.getAttribute('data-analysis-area');
+                if (area && !areas.includes(area)) {
+                    areas.push(area);
+                }
+            });
+            
+            try {
+                // Load all statuses in parallel
+                const statusPromises = areas.map(async (area) => {
+                    try {
+                        const response = await fetch(`/api/dashboard/analysis?client_id=${clientId}&area=${area}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            return { area, analysis: data.analysis || data };
+                        }
+                    } catch (error) {
+                        console.error(`Error loading status for ${area}:`, error);
+                    }
+                    return { area, analysis: getFallbackAnalysis(area) };
+                });
+                
+                const statuses = await Promise.all(statusPromises);
+                
+                // Update icons
+                statuses.forEach(({ area, analysis }) => {
+                    updateStatusIcon(area, analysis.status || 'good');
+                });
+            } catch (error) {
+                console.error('Error loading status icons:', error);
+                // Fallback: use default statuses
+                areas.forEach(area => {
+                    const fallback = getFallbackAnalysis(area);
+                    updateStatusIcon(area, fallback.status || 'good');
+                });
+            }
+        }
+
+        function updateStatusIcon(area, status) {
+            const button = document.querySelector(`[data-area="${area}"]`);
+            if (!button) return;
+            
+            // Remove all status classes
+            button.classList.remove('status-good', 'status-warning', 'status-critical', 'status-suggestion', 'status-pending');
+            
+            // Add appropriate status class
+            button.classList.add(`status-${status}`);
+            
+            // Update icon/content based on status
+            const icons = {
+                'good': '✓',
+                'warning': '⚠',
+                'critical': '⚠',
+                'suggestion': '💡'
+            };
+            
+            button.textContent = icons[status] || 'ℹ';
+        }
+
+        async function loadSocialProfiles(clientId) {
+            try {
+                const response = await fetch(`/api/dashboard/socials?client_id=${clientId}`);
+                const data = await response.json();
+                
+                const grid = document.getElementById('socials-grid');
+                const totalFollowers = data.total_followers || 0;
+                
+                // Update Fans value
+                currentFollowers = totalFollowers;
+                document.getElementById('total-followers').textContent = formatNumber(totalFollowers);
+                
+                if (data.profiles && data.profiles.length > 0) {
+                    grid.innerHTML = data.profiles.map(profile => {
+                        // Platform icon URLs (using simple SVG or icon fonts)
+                        const platformIcons = {
+                            'linkedin': 'https://cdn.simpleicons.org/linkedin/0077B5',
+                            'x': 'https://cdn.simpleicons.org/x/000000',
+                            'threads': 'https://cdn.simpleicons.org/threads/000000',
+                            'instagram': 'https://cdn.simpleicons.org/instagram/E4405F',
+                            'substack': 'https://cdn.simpleicons.org/substack/FF6719',
+                            'telegram': 'https://cdn.simpleicons.org/telegram/26A5E4'
+                        };
+                        
+                        return `
+                        <article class="popup-card" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                ${profile.profile_pic ? 
+                                    `<img src="${profile.profile_pic}" alt="${profile.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
+                                    `<div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(168, 85, 247, 0.2); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255, 255, 255, 0.1);">
+                                        <img src="${platformIcons[profile.platform] || ''}" alt="${profile.name}" style="width: 28px; height: 28px; object-fit: contain;" onerror="this.parentElement.innerHTML='${profile.icon}'">
+                                    </div>`
+                                }
+                                <div style="flex: 1;">
+                                    <strong style="display: block; margin-bottom: 0.25rem;">${profile.name}</strong>
+                                    ${profile.username ? `<span style="color: #a8b2d1; font-size: 0.85rem;">@${profile.username}</span>` : ''}
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 1.5rem; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem;">
+                                    ${formatNumber(profile.followers)}
+                                </div>
+                                <div style="color: #a8b2d1; font-size: 0.85rem;">Followers</div>
+                            </div>
+                            ${profile.description ? `<p style="color: #a8b2d1; font-size: 0.9rem; margin: 0; line-height: 1.5;">${profile.description}</p>` : ''}
+                        </article>
+                    `;
+                    }).join('');
+                } else {
+                    grid.innerHTML = '<p style="color: #a8b2d1; text-align: center; padding: 2rem; grid-column: 1 / -1;">No social platforms enabled. Enable them in Settings → Social Platform Settings.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading social profiles:', error);
+                document.getElementById('socials-grid').innerHTML = '<p style="color: #f87171; text-align: center; padding: 2rem; grid-column: 1 / -1;">Error loading social profiles</p>';
+            }
+        }
+
+        async function loadWeeklyPosts(clientId) {
+            try {
+                const response = await fetch(`/api/dashboard/posts?client_id=${clientId}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('weekly-posts-container');
+                const subtitle = document.getElementById('weekly-posts-subtitle');
+                if (!container) return;
+                
+                // Update subtitle with default newsletter time if available
+                if (subtitle && data.newsletter_default_time) {
+                    subtitle.textContent = `Content scheduled for this week · Default: ${data.newsletter_default_time}`;
+                }
+                
+                const platformNames = {
+                    'linkedin': 'LinkedIn',
+                    'x': 'X (Twitter)',
+                    'threads': 'Threads',
+                    'instagram': 'Instagram',
+                    'substack': 'Substack',
+                    'telegram': 'Telegram'
+                };
+                
+                // Handle empty states
+                if (!data.has_drafted) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 3rem 2rem;">
+                            <p style="color: #a8b2d1; font-size: 1rem; margin-bottom: 1.5rem;">No posts drafted for this week</p>
+                            <a href="/content/create" class="glass-button" style="display: inline-block; text-decoration: none;">
+                                + New Post
+                            </a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (data.has_drafted && !data.has_scheduled) {
+                    // Drafted but not scheduled
+                    const topic = (data.topic || 'Untitled').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const postLink = data.topic_post_id ? `/content/posts/${data.topic_post_id}` : '/content';
+                    
+                    container.innerHTML = `
+                        <div style="padding: 2rem;">
+                            ${data.topic ? `
+                            <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; cursor: pointer;" onclick="window.location='${postLink}'">
+                                <div style="color: #a8b2d1; font-size: 0.85rem; margin-bottom: 0.5rem;">📝 Topic</div>
+                                <h3 style="margin: 0; color: #ffffff; font-size: 1.1rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                                    <span>${topic}</span>
+                                    <span style="color: #a8b2d1; font-size: 0.9rem;">→</span>
+                                </h3>
+                            </div>
+                            ` : ''}
+                            <div style="text-align: center; padding: 2rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.2);">
+                                <p style="color: #f59e0b; font-size: 0.95rem; margin-bottom: 1.5rem;">⚠️ Posts drafted but not scheduled</p>
+                                <a href="${postLink}" class="glass-button" style="display: inline-block; text-decoration: none;">
+                                    Schedule Posts
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Has scheduled content - show full view
+                // Format newsletter scheduled date in UTC
+                let newsletterDate = 'Not scheduled';
+                if (data.newsletter_scheduled) {
+                    try {
+                        const scheduledDate = new Date(data.newsletter_scheduled);
+                        newsletterDate = scheduledDate.toLocaleString('en-US', { 
+                            timeZone: 'UTC',
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        }) + ' UTC';
+                    } catch (e) {
+                        newsletterDate = data.newsletter_scheduled + ' UTC';
+                    }
+                }
+                
+                // Build social posts list (only show platforms with posts)
+                const socialPostsList = Object.entries(data.social_counts || {})
+                    .filter(([_, count]) => count > 0)
+                    .map(([platform, count]) => {
+                        const platformName = platformNames[platform] || platform;
+                        return { platform, platformName, count };
+                    });
+                
+                // Escape HTML in topic
+                const topic = (data.topic || 'No topic set').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const postLink = data.topic_post_id ? `/content/posts/${data.topic_post_id}` : '/content';
+                const socialLink = data.topic_post_id ? `/content/posts/${data.topic_post_id}#socials` : '/content';
+                
+                // Format special events
+                let specialEventsHtml = '';
+                if (data.special_events && data.special_events.length > 0) {
+                    const eventIcons = {
+                        'holiday': '🎄',
+                        'launch': '🚀',
+                        'announcement': '📢',
+                        'event': '📅'
+                    };
+                    specialEventsHtml = `
+                        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="color: #a8b2d1; font-size: 0.85rem; margin-bottom: 0.75rem; font-weight: 500;">🎯 Special Events</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                ${data.special_events.map(event => {
+                                    const eventDate = new Date(event.date);
+                                    const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    });
+                                    const icon = eventIcons[event.type] || '📅';
+                                    return `
+                                        <div style="padding: 0.75rem; background: rgba(168, 85, 247, 0.1); border-radius: 8px; border-left: 3px solid #a855f7;">
+                                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                <div>
+                                                    <div style="color: #ffffff; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.25rem;">
+                                                        ${icon} ${event.name}
+                                                    </div>
+                                                    <div style="color: #a8b2d1; font-size: 0.8rem;">${formattedDate}</div>
+                                                    ${event.announcement ? `<div style="color: #a8b2d1; font-size: 0.8rem; margin-top: 0.25rem;">${event.announcement}</div>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <!-- Topic Card (Clickable) -->
+                        ${data.topic ? `
+                        <div class="clickable-card" style="padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; cursor: pointer; transition: all 0.2s;" 
+                             onclick="window.location='${postLink}'"
+                             onmouseover="this.style.background='rgba(255, 255, 255, 0.08)'; this.style.borderColor='rgba(255, 255, 255, 0.2)'"
+                             onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <div style="color: #a8b2d1; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                        <span>📝</span>
+                                        <span>This Week's Topic</span>
+                                    </div>
+                                    <h3 style="margin: 0; color: #ffffff; font-size: 1.1rem; font-weight: 600; line-height: 1.4;">${topic}</h3>
+                                </div>
+                                <span style="color: #a8b2d1; font-size: 1.2rem; margin-left: 1rem;">→</span>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Newsletter Section -->
+                        <div style="padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;">
+                            <div style="color: #a8b2d1; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>📧</span>
+                                <span>Newsletter</span>
+                            </div>
+                            <div style="color: #ffffff; font-weight: 500; font-size: 1rem; margin-bottom: 0.5rem;">${newsletterDate}</div>
+                            <div style="color: #a8b2d1; font-size: 0.8rem;">Default: ${data.newsletter_default_time || '09:00 UTC (Every Friday)'}</div>
+                        </div>
+                        
+                        <!-- Social Posts Section (Clickable) -->
+                        <div class="clickable-card" style="padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; cursor: pointer; transition: all 0.2s;"
+                             onclick="window.location='${socialLink}'"
+                             onmouseover="this.style.background='rgba(255, 255, 255, 0.08)'; this.style.borderColor='rgba(255, 255, 255, 0.2)'"
+                             onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                                <div style="color: #a8b2d1; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>📱</span>
+                                    <span>Social Posts Scheduled</span>
+                                </div>
+                                <span style="color: #a8b2d1; font-size: 0.9rem;">View All →</span>
+                            </div>
+                            ${socialPostsList.length > 0 ? `
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    ${socialPostsList.map(item => `
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(168, 85, 247, 0.1); border-radius: 8px;">
+                                            <span style="color: #ffffff; font-size: 0.95rem; font-weight: 500;">${item.platformName}</span>
+                                            <span style="color: #a855f7; font-size: 0.95rem; font-weight: 600;">${item.count} ${item.count === 1 ? 'post' : 'posts'}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<div style="color: #a8b2d1; font-size: 0.95rem;">No social posts scheduled</div>'}
+                        </div>
+                        
+                        <!-- Special Events -->
+                        ${specialEventsHtml}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading weekly posts:', error);
+                const container = document.getElementById('weekly-posts-container');
+                if (container) {
+                    container.innerHTML = '<p style="color: #f87171; text-align: center; padding: 2rem;">Error loading posts</p>';
+                }
+            }
+        }
+
+        async function loadProducts(clientId) {
+            try {
+                const response = await fetch(`/api/dashboard/products?client_id=${clientId}`);
+                const data = await response.json();
+                
+                const grid = document.getElementById('products-grid');
+                
+                // Calculate total earnings from all products
+                const totalEarnings = data.products ? data.products.reduce((sum, p) => sum + (p.revenue || 0), 0) : 0;
+                currentEarnings = totalEarnings;
+                
+                if (data.products && data.products.length > 0) {
+                    grid.innerHTML = data.products.map(product => `
+                        <article class="glass-group">
+                            <div class="group-header">
+                                <span>${product.name || product.product_id}</span>
+                                <span class="micro-tag">Active</span>
+                            </div>
+                            <div class="group-meta">
+                                <span>${formatNumber(product.monthly_sales || 0)} sales</span>
+                                <span>${formatNumber(product.monthly_buyers || 0)} buyers</span>
+                            </div>
+                            ${product.revenue > 0 ? `
+                                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <div style="font-size: 1.25rem; font-weight: 600; color: #22c55e;">
+                                        $${formatNumber(product.revenue)}
+                                    </div>
+                                    <div style="color: #a8b2d1; font-size: 0.85rem;">Monthly Revenue</div>
+                                </div>
+                            ` : ''}
+                        </article>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<p style="color: #a8b2d1; text-align: center; padding: 2rem;">No products configured. Add a product in Product settings.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('products-grid').innerHTML = '<p style="color: #f87171; text-align: center; padding: 2rem;">Error loading products</p>';
+            }
+        }
+
+        // Load growth chart data
+        async function loadGrowthData(clientId) {
+            try {
+                console.log('Loading growth data for client:', clientId);
+                const response = await fetch(`/api/dashboard/growth?client_id=${clientId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Growth data received:', data);
+                
+                const months = data.months || [];
+                let earnings = data.earnings || [];
+                let followers = data.followers || [];
+                
+                console.log('Months:', months.length, 'Earnings:', earnings.length, 'Followers:', followers.length);
+                
+                // Update current month values to match hero section (use actual current values)
+                if (earnings.length > 0) {
+                    // Ensure last month matches current actual values
+                    earnings[earnings.length - 1] = currentEarnings || earnings[earnings.length - 1];
+                    followers[followers.length - 1] = currentFollowers || followers[followers.length - 1];
+                    
+                    const earnEl = document.getElementById('monthly-earnings');
+                    if (earnEl) {
+                        earnEl.textContent = '$' + formatNumber(currentEarnings || earnings[earnings.length - 1]);
+                    }
+                }
+                
+                // Calculate trends
+                if (earnings.length >= 2) {
+                    const prevEarn = earnings[earnings.length - 2];
+                    const earnChange = prevEarn > 0 ? ((earnings[earnings.length - 1] - prevEarn) / prevEarn * 100).toFixed(1) : '0.0';
+                    const earnTrend = document.getElementById('earn-trend');
+                    if (earnTrend) {
+                        earnTrend.textContent = `${earnChange >= 0 ? '+' : ''}${earnChange}% MoM`;
+                        earnTrend.className = `mini-box-trend ${earnChange >= 0 ? 'trend-up' : 'trend-down'}`;
+                    }
+                }
+                
+                if (followers.length >= 2) {
+                    const prevFollowers = followers[followers.length - 2];
+                    const fansChange = prevFollowers > 0 ? ((followers[followers.length - 1] - prevFollowers) / prevFollowers * 100).toFixed(1) : '0.0';
+                    const fansTrend = document.getElementById('fans-trend');
+                    if (fansTrend) {
+                        fansTrend.textContent = `${fansChange >= 0 ? '+' : ''}${fansChange}% MoM`;
+                        fansTrend.className = `mini-box-trend ${fansChange >= 0 ? 'trend-up' : 'trend-down'}`;
+                    }
+                }
+                
+                // Create chart
+                const ctx = document.getElementById('growth-chart');
+                console.log('Canvas element:', ctx);
+                console.log('Chart.js available:', typeof Chart !== 'undefined');
+                
+                if (!ctx) {
+                    console.error('❌ Canvas element not found!');
+                    return;
+                }
+                
+                if (typeof Chart === 'undefined') {
+                    console.error('❌ Chart.js not loaded!');
+                    return;
+                }
+                
+                if (months.length === 0 || earnings.length === 0 || followers.length === 0) {
+                    console.error('❌ No data to display!', { months: months.length, earnings: earnings.length, followers: followers.length });
+                    return;
+                }
+                
+                if (growthChart) {
+                    growthChart.destroy();
+                }
+                
+                console.log('Creating chart with data:', { months, earnings, followers });
+                
+                    growthChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: months,
+                            datasets: [
+                                {
+                                    label: 'Earnings ($)',
+                                    data: earnings,
+                                    borderColor: 'rgb(34, 197, 94)',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                    tension: 0.4,
+                                    fill: true,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Followers',
+                                    data: followers,
+                                    borderColor: 'rgb(168, 85, 247)',
+                                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                    tension: 0.4,
+                                    fill: true,
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        color: '#ffffff',
+                                        font: {
+                                            family: 'Inter, sans-serif'
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(3, 7, 18, 0.95)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#a8b2d1',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            if (context.datasetIndex === 0) {
+                                                return 'Earnings: $' + formatNumber(context.parsed.y);
+                                            } else {
+                                                return 'Followers: ' + formatNumber(context.parsed.y);
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        color: '#a8b2d1',
+                                        font: {
+                                            family: 'Inter, sans-serif'
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.05)'
+                                    }
+                                },
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    ticks: {
+                                        color: '#22c55e',
+                                        font: {
+                                            family: 'Inter, sans-serif'
+                                        },
+                                        callback: function(value) {
+                                            return '$' + formatNumber(value);
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(34, 197, 94, 0.1)'
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Earnings ($)',
+                                        color: '#22c55e',
+                                        font: {
+                                            family: 'Inter, sans-serif'
+                                        }
+                                    }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    ticks: {
+                                        color: '#a855f7',
+                                        font: {
+                                            family: 'Inter, sans-serif'
+                                        },
+                                        callback: function(value) {
+                                            return formatNumber(value);
+                                        }
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false,
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Followers',
+                                        color: '#a855f7',
+                                        font: {
+                                            family: 'Inter, sans-serif'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ Chart created successfully!', growthChart);
+            } catch (error) {
+                console.error('❌ Error loading growth data:', error);
+                console.error('Error details:', error.message, error.stack);
+            }
+        }
+
+        // Load dashboard data on page load
+        loadDashboardData();
+
+        // Analysis tooltip system
+        let currentTooltip = null;
+        let analysisCache = {};
+
+        async function showAnalysis(areaId, event) {
+            event.stopPropagation();
+            
+            // Close existing tooltip if open
+            if (currentTooltip) {
+                closeTooltip();
+                // If clicking same area, just close
+                if (currentTooltip.areaId === areaId) {
+                    return;
+                }
+            }
+
+            // Show loading state
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '...';
+            button.disabled = true;
+
+            try {
+                // Get client ID
+                const clientsResponse = await fetch('/api/clients');
+                const clientsData = await clientsResponse.json();
+                const clientId = clientsData.clients && clientsData.clients.length > 0 
+                    ? clientsData.clients[0].client_id 
+                    : null;
+
+                if (!clientId) {
+                    throw new Error('No client found');
+                }
+
+                // Fetch analysis (use cache if available)
+                let analysis;
+                if (analysisCache[areaId]) {
+                    analysis = analysisCache[areaId];
+                } else {
+                    const response = await fetch(`/api/dashboard/analysis?client_id=${clientId}&area=${areaId}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch analysis');
+                    }
+                    const data = await response.json();
+                    analysis = data.analysis || data;
+                    analysisCache[areaId] = analysis;
+                }
+
+                // Find the element to attach tooltip to - prioritize funnel-stage
+                const element = document.querySelector(`[data-analysis-area="${areaId}"]`) || button.closest('.funnel-stage') || button.closest('.glass-card');
+                
+                // Update status icon
+                updateStatusIcon(areaId, analysis.status || 'good');
+                
+                // Create and show tooltip
+                createTooltip(areaId, analysis, element, event);
+                
+            } catch (error) {
+                console.error('Error loading analysis:', error);
+                // Fallback to static analysis
+                const fallbackAnalysis = getFallbackAnalysis(areaId);
+                const element = document.querySelector(`[data-analysis-area="${areaId}"]`) || button.closest('.funnel-stage') || button.closest('.glass-card');
+                createTooltip(areaId, fallbackAnalysis, element, event);
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        function createTooltip(areaId, analysis, element, event) {
+            // Remove existing tooltip
+            const existing = document.getElementById('analysis-tooltip');
+            if (existing) {
+                existing.remove();
+            }
+
+            // Create tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.id = 'analysis-tooltip';
+            tooltip.className = `analysis-tooltip analysis-${analysis.status || 'good'}`;
+            
+            const statusEmoji = {
+                'good': '✅',
+                'warning': '⚠️',
+                'critical': '🔴'
+            }[analysis.status] || 'ℹ️';
+
+            tooltip.innerHTML = `
+                <div class="tooltip-header">
+                    <span class="tooltip-status">${statusEmoji} ${analysis.area_name || areaId.replace(/_/g, ' ')}</span>
+                    <button class="tooltip-close" onclick="closeTooltip()" aria-label="Close">×</button>
+                </div>
+                <div class="tooltip-content">
+                    ${analysis.what_is_good ? `
+                        <div class="tooltip-section">
+                            <strong style="color: #22c55e;">What's Good:</strong>
+                            <p>${analysis.what_is_good}</p>
+                        </div>
+                    ` : ''}
+                    ${analysis.what_is_bad ? `
+                        <div class="tooltip-section">
+                            <strong style="color: #f59e0b;">Needs Attention:</strong>
+                            <p>${analysis.what_is_bad}</p>
+                        </div>
+                    ` : ''}
+                    ${analysis.current_value !== undefined ? `
+                        <div class="tooltip-metrics">
+                            <span>Current: <strong>${formatNumber(analysis.current_value)}</strong></span>
+                            ${analysis.target_value ? `<span>Target: <strong>${formatNumber(analysis.target_value)}</strong></span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${analysis.improvements && analysis.improvements.length > 0 ? `
+                        <div class="tooltip-section">
+                            <strong>Improvements:</strong>
+                            <ul>
+                                ${analysis.improvements.map(imp => `<li>${imp}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    ${analysis.suggestions && analysis.suggestions.length > 0 ? `
+                        <div class="tooltip-section">
+                            <strong>Suggestions:</strong>
+                            <ul>
+                                ${analysis.suggestions.map(sug => `<li>${sug}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.body.appendChild(tooltip);
+
+            // Position tooltip
+            positionTooltip(tooltip, element, event);
+
+            // Store reference with element for scroll tracking
+            currentTooltip = { areaId, element: tooltip, targetElement: element };
+
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', closeTooltipOnOutsideClick, true);
+            }, 100);
+        }
+
+        function positionTooltip(tooltip, element, event) {
+            const updatePosition = () => {
+                if (!tooltip.parentElement || !element.parentElement) {
+                    window.removeEventListener('scroll', updatePosition, true);
+                    return;
+                }
+                
+                const rect = element.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                let top, left;
+
+                // Try to position above element first
+                if (rect.top > tooltipRect.height + 20) {
+                    top = rect.top - tooltipRect.height - 10;
+                    left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                } else if (rect.bottom + tooltipRect.height + 20 < viewportHeight) {
+                    // Position below
+                    top = rect.bottom + 10;
+                    left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                } else {
+                    // Position to the side
+                    if (rect.right + tooltipRect.width + 20 < viewportWidth) {
+                        top = rect.top;
+                        left = rect.right + 10;
+                    } else {
+                        top = rect.top;
+                        left = rect.left - tooltipRect.width - 10;
+                    }
+                }
+
+                // Ensure tooltip stays within viewport
+                left = Math.max(10, Math.min(left, viewportWidth - tooltipRect.width - 10));
+                top = Math.max(10, Math.min(top, viewportHeight - tooltipRect.height - 10));
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            };
+            
+            // Initial positioning
+            updatePosition();
+            
+            // Update on scroll (use capture phase to catch all scroll events)
+            window.addEventListener('scroll', updatePosition, true);
+            tooltip.dataset.scrollHandler = 'true';
+        }
+
+        function closeTooltip() {
+            if (currentTooltip) {
+                const tooltip = currentTooltip.element;
+                // Remove scroll listener
+                if (tooltip.dataset.scrollHandler === 'true') {
+                    // Create a new update function reference to remove the exact listener
+                    // Since we can't easily remove the listener, we'll just remove the tooltip
+                    // and the listener will check if parent exists and auto-cleanup
+                }
+                tooltip.remove();
+                currentTooltip = null;
+                document.removeEventListener('click', closeTooltipOnOutsideClick, true);
+            }
+        }
+
+        function closeTooltipOnOutsideClick(event) {
+            if (currentTooltip && !currentTooltip.element.contains(event.target)) {
+                const helpButtons = document.querySelectorAll('.help-icon-btn');
+                let clickedHelpButton = false;
+                helpButtons.forEach(btn => {
+                    if (btn.contains(event.target)) {
+                        clickedHelpButton = true;
+                    }
+                });
+                if (!clickedHelpButton) {
+                    closeTooltip();
+                }
+            }
+        }
+
+        function getFallbackAnalysis(areaId) {
+            // Fallback static analysis if API fails
+            const fallbacks = {
+                'blog_visitors': {
+                    area_name: 'Blog Visitors',
+                    status: 'warning',
+                    current_value: 1234,
+                    target_value: 5000,
+                    what_is_good: 'Your blog is getting consistent traffic',
+                    what_is_bad: 'Traffic is below target of 5,000 weekly visitors',
+                    improvements: [
+                        'Increase content frequency to 3-4 posts/week',
+                        'Optimize SEO for high-intent keywords',
+                        'Promote posts on social media'
+                    ],
+                    suggestions: [
+                        'Focus on long-form content (2,000+ words)',
+                        'Add internal linking between posts',
+                        'Create topic clusters around main themes'
+                    ]
+                },
+                'new_subscribers': {
+                    area_name: 'New Subscribers',
+                    status: 'critical',
+                    current_value: 23,
+                    target_value: 49,
+                    what_is_good: 'You have a growing email list',
+                    what_is_bad: 'Capture rate is 1.9% vs target 4%. You\'re losing 98% of visitors',
+                    improvements: [
+                        'Add ebook popup to blog',
+                        'Create exit-intent popup',
+                        'Add lead magnet to every post'
+                    ],
+                    suggestions: [
+                        'Test different lead magnet offers',
+                        'Simplify signup form (fewer fields)',
+                        'Add social proof to signup page'
+                    ]
+                },
+                'open_rate': {
+                    area_name: 'Open Rate',
+                    status: 'good',
+                    current_value: 45.2,
+                    target_value: 40,
+                    what_is_good: 'Your open rate is above target! Content resonates well',
+                    what_is_bad: null,
+                    improvements: [
+                        'Maintain current subject line quality',
+                        'Test send times for better engagement'
+                    ],
+                    suggestions: [
+                        'Segment list for more targeted content',
+                        'A/B test subject lines',
+                        'Personalize email content'
+                    ]
+                },
+                'inquiries_clients': {
+                    area_name: 'Inquiries → Clients',
+                    status: 'good',
+                    current_value: 50,
+                    target_value: 40,
+                    what_is_good: 'Excellent close rate! You convert well',
+                    what_is_bad: 'Low inquiry volume (only 2 per week)',
+                    improvements: [
+                        'Add case studies to newsletter',
+                        'Include testimonials in every email',
+                        'Create clear call-to-action'
+                    ],
+                    suggestions: [
+                        'Add inquiry form to website',
+                        'Make booking process easier',
+                        'Show social proof on landing pages'
+                    ]
+                }
+            };
+            return fallbacks[areaId] || {
+                area_name: areaId.replace(/_/g, ' '),
+                status: 'good',
+                what_is_good: 'This area is performing well',
+                improvements: ['Continue monitoring performance']
+            };
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
     </script>
 </body>
 </html>

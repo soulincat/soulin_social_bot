@@ -408,6 +408,7 @@
                         if (brand.socials[platform.id]) {
                             socialSettings[platform.id] = {
                                 enabled: brand.socials[platform.id].enabled !== false,
+                                profile_url: brand.socials[platform.id].profile_url || '',
                                 voice: brand.socials[platform.id].voice || '',
                                 tone: brand.socials[platform.id].tone || '',
                                 maxLength: brand.socials[platform.id].maxLength || platform.defaultLength,
@@ -419,6 +420,7 @@
                             // Use defaults if platform not in saved settings
                             socialSettings[platform.id] = {
                                 enabled: true,
+                                profile_url: '',
                                 voice: '',
                                 maxLength: platform.defaultLength,
                                 minLength: Math.floor(platform.defaultLength * 0.5),
@@ -433,6 +435,7 @@
                     platforms.forEach(platform => {
                         socialSettings[platform.id] = {
                             enabled: true,
+                            profile_url: '',
                             voice: '',
                             maxLength: platform.defaultLength,
                             minLength: Math.floor(platform.defaultLength * 0.5),
@@ -446,6 +449,8 @@
                 renderTags();
                 renderSocialPlatforms();
                 setupTagInputHandlers();
+                setupUrlValidation();
+                // Note: checkAllConnectionStatuses removed - we use URL inputs instead of OAuth
             } catch (error) {
                 console.error('Error loading brand settings:', error);
                 // Still render platforms with defaults on error
@@ -453,6 +458,7 @@
                     if (!socialSettings[platform.id]) {
                         socialSettings[platform.id] = {
                             enabled: true,
+                            profile_url: '',
                             voice: '',
                             maxLength: platform.defaultLength,
                             minLength: Math.floor(platform.defaultLength * 0.5),
@@ -463,6 +469,7 @@
                     }
                 });
                 renderSocialPlatforms();
+                setupUrlValidation();
             }
         }
 
@@ -503,6 +510,33 @@
 
         // Make removeTag available globally
         window.removeTag = removeTag;
+        
+        // Get example URL for each platform (defined before renderSocialPlatforms uses it)
+        function getExampleUrl(platformId) {
+            const examples = {
+                'linkedin': 'https://linkedin.com/in/username',
+                'x': 'https://x.com/username',
+                'threads': 'https://threads.net/@username',
+                'instagram': 'https://instagram.com/username',
+                'substack': 'https://username.substack.com',
+                'telegram': 'https://t.me/username'
+            };
+            return examples[platformId] || 'https://example.com/username';
+        }
+        
+        // Helper function for template strings
+        function getExampleUrlForPlatform(platformId, placeholder = false) {
+            const examples = {
+                'linkedin': 'https://linkedin.com/in/username',
+                'x': 'https://x.com/username',
+                'threads': 'https://threads.net/@username',
+                'instagram': 'https://instagram.com/username',
+                'substack': 'https://username.substack.com',
+                'telegram': 'https://t.me/username'
+            };
+            const url = examples[platformId] || 'https://example.com/username';
+            return placeholder ? url : ` (e.g., ${url})`;
+        }
         
         // Render social platform configurations
         function renderSocialPlatforms() {
@@ -548,15 +582,20 @@
             }
             
             platforms.forEach(platform => {
-                const settings = socialSettings[platform.id] || {
-                    enabled: true,
-                    voice: '',
-                    maxLength: platform.defaultLength,
-                    minLength: Math.floor(platform.defaultLength * 0.5),
-                    postCount: platform.defaultPosts,
-                    tone: '',
-                    format: ''
-                };
+                // Ensure settings exist
+                if (!socialSettings[platform.id]) {
+                    socialSettings[platform.id] = {
+                        enabled: true,
+                        profile_url: '',
+                        voice: '',
+                        maxLength: platform.defaultLength,
+                        minLength: Math.floor(platform.defaultLength * 0.5),
+                        postCount: platform.defaultPosts,
+                        tone: '',
+                        format: ''
+                    };
+                }
+                const settings = socialSettings[platform.id];
                 
                 const platformEl = document.createElement('div');
                 platformEl.className = 'platform-config';
@@ -569,6 +608,14 @@
                         </div>
                     </div>
                     <div class="platform-fields" style="display: ${settings.enabled ? 'grid' : 'none'};" id="fields-${platform.id}">
+                        ${settings.enabled ? `
+                        <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                            <label for="${platform.id}-url">Profile URL</label>
+                            <span class="label-help">Enter your ${platform.name} profile URL${getExampleUrlForPlatform(platform.id)}</span>
+                            <input type="url" id="${platform.id}-url" value="${settings.profile_url || ''}" placeholder="${getExampleUrlForPlatform(platform.id, true)}" style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; color: #ffffff; font-family: inherit; font-size: 0.95rem;">
+                            <div id="${platform.id}-url-status" style="margin-top: 0.5rem; font-size: 0.85rem; color: #a8b2d1;"></div>
+                        </div>
+                        ` : ''}
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="${platform.id}-voice">Platform-Specific Voice</label>
                             <span class="label-help">How should content sound on ${platform.name}? (e.g., "More casual than LinkedIn", "Professional but approachable")</span>
@@ -616,6 +663,71 @@
         }
         
         window.togglePlatformEnabled = togglePlatformEnabled;
+        window.getExampleUrl = getExampleUrl;
+        
+        // Validate and test profile URLs
+        async function validateProfileUrl(platformId, url) {
+            if (!url || !url.trim()) {
+                document.getElementById(`${platformId}-url-status`).textContent = '';
+                return;
+            }
+            
+            const statusEl = document.getElementById(`${platformId}-url-status`);
+            statusEl.textContent = 'Validating...';
+            statusEl.style.color = '#a8b2d1';
+            
+            try {
+                // Basic URL validation
+                new URL(url);
+                statusEl.textContent = '✓ URL format valid';
+                statusEl.style.color = '#22c55e';
+            } catch (e) {
+                statusEl.textContent = '⚠ Invalid URL format';
+                statusEl.style.color = '#f87171';
+            }
+        }
+        
+        // Setup URL validation on input
+        function setupUrlValidation() {
+            platforms.forEach(platform => {
+                const urlInput = document.getElementById(`${platform.id}-url`);
+                if (urlInput) {
+                    urlInput.addEventListener('blur', (e) => {
+                        validateProfileUrl(platform.id, e.target.value);
+                    });
+                }
+            });
+        }
+        
+        // Check connection status for all platforms
+        async function checkAllConnectionStatuses() {
+            if (!currentClientId) return;
+            try {
+                const response = await fetch(`/api/clients/${currentClientId}`);
+                const data = await response.json();
+                const connectedAccounts = data.client?.connected_accounts || {};
+                
+                platforms.forEach(platform => {
+                    const statusEl = document.getElementById(`${platform.id}-url-status`);
+                    if (statusEl) {
+                        // Check if URL is provided instead of connection status
+                        const urlInput = document.getElementById(`${platform.id}-url`);
+                        if (urlInput && urlInput.value) {
+                            statusEl.textContent = '✓ URL provided';
+                            statusEl.style.color = '#22c55e';
+                        } else {
+                            statusEl.textContent = '';
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error checking connection status:', error);
+            }
+        }
+        
+        async function checkConnectionStatus(platformId) {
+            await checkAllConnectionStatuses();
+        }
 
         // Tag input handlers - set up after DOM is ready
         function setupTagInputHandlers() {
@@ -667,6 +779,7 @@
                 if (enabled) {
                     socialsData[platform.id] = {
                         enabled: true,
+                        profile_url: document.getElementById(`${platform.id}-url`)?.value?.trim() || '',
                         voice: document.getElementById(`${platform.id}-voice`)?.value || '',
                         tone: document.getElementById(`${platform.id}-tone`)?.value || '',
                         minLength: parseInt(document.getElementById(`${platform.id}-minLength`)?.value || Math.floor(platform.defaultLength * 0.5)),
@@ -730,6 +843,7 @@
         platforms.forEach(platform => {
             socialSettings[platform.id] = {
                 enabled: true,
+                profile_url: '',
                 voice: '',
                 maxLength: platform.defaultLength,
                 minLength: Math.floor(platform.defaultLength * 0.5),
