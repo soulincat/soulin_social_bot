@@ -72,8 +72,12 @@ def get_beehiiv_credentials(client_id):
     """
     import json
     
-    with open('clients.json', 'r') as f:
-        clients_data = json.load(f)
+    try:
+        with open('clients.json', 'r') as f:
+            clients_data = json.load(f)
+    except FileNotFoundError:
+        print(f"⚠️ clients.json not found, cannot get Beehiiv credentials")
+        return None
     
     client = None
     for c in clients_data.get('clients', []):
@@ -403,15 +407,19 @@ def publish_queued_derivatives():
                     post_id = derivative.get('post_id')
                     
                     # Get client info for chat_id
-                    with open('clients.json', 'r') as f:
-                        clients_data = json.load(f)
+                    try:
+                        with open('clients.json', 'r') as f:
+                            clients_data = json.load(f)
+                    except FileNotFoundError:
+                        print(f"⚠️ clients.json not found, skipping scheduled publish")
+                        clients_data = {"clients": []}
                     
                     # Find client from post
                     from .center_post import get_post
                     post = get_post(post_id)
                     if post:
                         client_id = post.get('client_id')
-                        client = next((c for c in clients_data['clients'] if c.get('client_id') == client_id), None)
+                        client = next((c for c in clients_data.get('clients', []) if c.get('client_id') == client_id), None)
                         chat_id = client.get('chat_id') if client else None
                         
                         # Publish based on type
