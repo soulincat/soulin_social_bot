@@ -112,13 +112,16 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, in
             
             return post
         except Exception as e:
-            # Save as idea even if AI fails
+            # Save as idea even if AI fails - don't raise, just return the post
             post['status'] = 'idea'
             post['error'] = str(e)
             data = load_content_posts()
             data['posts'].append(post)
             save_content_posts(data)
-            raise Exception(f"Failed to expand idea: {str(e)}")
+            # Return the post instead of raising - frontend can handle it
+            print(f"⚠️ AI expansion failed: {str(e)}")
+            print("   Post saved as 'idea' status. User can expand manually later.")
+            return post
     else:
         # Just save raw idea
         data = load_content_posts()
