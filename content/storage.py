@@ -45,70 +45,87 @@ def get_storage_key(key_type, key_id=None):
 
 def load_from_kv(key):
     """Load data from Vercel KV using REST API"""
-    if not KV_AVAILABLE or not redis_client:
-        return None
+    # Try REST API first (Vercel KV uses REST, not direct Redis connection)
     try:
-        data = redis_client.get(key)
-        if data:
-            return json.loads(data) if isinstance(data, str) else data
+        import requests
+        kv_url = os.getenv('KV_REST_API_URL')
+        kv_token = os.getenv('KV_REST_API_TOKEN')
+        
+        if kv_url and kv_token:
+            # Vercel KV REST API format: POST to /get with JSON body
+            response = requests.post(
+                f"{kv_url}/get",
+                headers={
+                    "Authorization": f"Bearer {kv_token}",
+                    "Content-Type": "application/json"
+                },
+                json={"key": key}
+            )
+            if response.status_code == 200:
+                result = response.json()
+                # Vercel KV returns {"result": "value"} or {"result": null}
+                if result.get('result'):
+                    value = result['result']
+                    return json.loads(value) if isinstance(value, str) else value
+            else:
+                print(f"⚠️ KV GET failed: {response.status_code} - {response.text}")
+    except ImportError:
+        pass
     except Exception as e:
-        # Try REST API approach if direct connection fails
+        print(f"⚠️ Error loading from KV (REST): {e}")
+    
+    # Fallback to direct Redis connection if available
+    if KV_AVAILABLE and redis_client:
         try:
-            import requests
-            kv_url = os.getenv('KV_REST_API_URL')
-            kv_token = os.getenv('KV_REST_API_TOKEN')
-            if kv_url and kv_token:
-                response = requests.get(
-                    f"{kv_url}/get/{key}",
-                    headers={"Authorization": f"Bearer {kv_token}"}
-                )
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get('result'):
-                        return json.loads(result['result']) if isinstance(result['result'], str) else result['result']
-        except Exception as e2:
-            print(f"⚠️ Error loading from KV (REST): {e2}")
+            data = redis_client.get(key)
+            if data:
+                return json.loads(data) if isinstance(data, str) else data
+        except Exception as e:
+            print(f"⚠️ Error loading from KV (direct): {e}")
+    
     return None
 
 def save_to_kv(key, data):
     """Save data to Vercel KV using REST API"""
-    if not KV_AVAILABLE or not redis_client:
-        # Try REST API directly
-        try:
-            import requests
-            kv_url = os.getenv('KV_REST_API_URL')
-            kv_token = os.getenv('KV_REST_API_TOKEN')
-            if kv_url and kv_token:
-                response = requests.post(
-                    f"{kv_url}/set/{key}",
-                    headers={"Authorization": f"Bearer {kv_token}"},
-                    json={"value": json.dumps(data)}
-                )
-                if response.status_code == 200:
-                    return True
-        except Exception as e:
-            print(f"⚠️ Error saving to KV (REST): {e}")
-        return False
-    
+    # Try REST API first (Vercel KV uses REST, not direct Redis connection)
     try:
-        redis_client.set(key, json.dumps(data))
-        return True
+        import requests
+        kv_url = os.getenv('KV_REST_API_URL')
+        kv_token = os.getenv('KV_REST_API_TOKEN')
+        
+        if kv_url and kv_token:
+            # Vercel KV REST API format: POST to /set with JSON body
+            response = requests.post(
+                f"{kv_url}/set",
+                headers={
+                    "Authorization": f"Bearer {kv_token}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "key": key,
+                    "value": json.dumps(data)
+                }
+            )
+            if response.status_code == 200:
+                print(f"✅ Successfully saved to KV: {key}")
+                return True
+            else:
+                print(f"⚠️ KV SET failed: {response.status_code} - {response.text}")
+    except ImportError:
+        print("⚠️ requests library not available for KV REST API")
     except Exception as e:
-        # Fallback to REST API
+        print(f"⚠️ Error saving to KV (REST): {e}")
+    
+    # Fallback to direct Redis connection if available
+    if KV_AVAILABLE and redis_client:
         try:
-            import requests
-            kv_url = os.getenv('KV_REST_API_URL')
-            kv_token = os.getenv('KV_REST_API_TOKEN')
-            if kv_url and kv_token:
-                response = requests.post(
-                    f"{kv_url}/set/{key}",
-                    headers={"Authorization": f"Bearer {kv_token}"},
-                    json={"value": json.dumps(data)}
-                )
-                return response.status_code == 200
-        except Exception as e2:
-            print(f"⚠️ Error saving to KV: {e2}")
-        return False
+            redis_client.set(key, json.dumps(data))
+            print(f"✅ Successfully saved to KV (direct): {key}")
+            return True
+        except Exception as e:
+            print(f"⚠️ Error saving to KV (direct): {e}")
+    
+    return False
 
 def load_posts():
     """Load posts from KV or return None if not available"""

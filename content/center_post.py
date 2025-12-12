@@ -44,31 +44,35 @@ def load_content_posts():
 
 def save_content_posts(data):
     """Save content posts to KV, file, or memory cache"""
-    # Update in-memory cache
+    # Update in-memory cache (for current session)
     global _in_memory_posts
     for post in data.get('posts', []):
         _in_memory_posts[post['id']] = post
     
-    # Try KV first (for Vercel)
+    # Try KV first (for Vercel) - this is the only way to persist on Vercel
+    kv_saved = False
     try:
         from .storage import save_posts
         if save_posts(data):
             print("✅ Saved posts to Vercel KV")
-            return
+            kv_saved = True
     except Exception as e:
-        print(f"⚠️ KV not available: {e}")
+        print(f"⚠️ KV save failed: {e}")
+        import traceback
+        traceback.print_exc()
     
-    # Fallback to file
-    try:
-        with open(CONTENT_POSTS_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
-        print("✅ Saved posts to file")
-    except (OSError, PermissionError) as e:
-        # Handle read-only filesystem (e.g., on Vercel without KV)
-        print(f"⚠️ Warning: Could not save to {CONTENT_POSTS_FILE}: {e}")
-        print("   Post data is cached in memory for this session only.")
-        print("   To persist data, set up Vercel KV in your Vercel project settings.")
-        # Don't raise - allow the function to continue
+    # Fallback to file (for local development)
+    if not kv_saved:
+        try:
+            with open(CONTENT_POSTS_FILE, 'w') as f:
+                json.dump(data, f, indent=2)
+            print("✅ Saved posts to file")
+        except (OSError, PermissionError) as e:
+            # Handle read-only filesystem (e.g., on Vercel without KV)
+            print(f"⚠️ WARNING: Could not save to {CONTENT_POSTS_FILE}: {e}")
+            print("   ⚠️ CRITICAL: Post data is ONLY in memory cache and will be LOST after this request!")
+            print("   ⚠️ Set up Vercel KV in your Vercel project settings to persist data.")
+            # Don't raise - allow the function to continue, but warn loudly
 
 def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, include_cta=False):
     """
