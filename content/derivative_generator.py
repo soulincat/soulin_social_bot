@@ -19,8 +19,15 @@ def load_derivatives():
 
 def save_derivatives(data):
     """Save derivatives to JSON file"""
-    with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except (OSError, PermissionError) as e:
+        # Handle read-only filesystem (e.g., on Vercel)
+        print(f"⚠️ Warning: Could not save to {CONTENT_DERIVATIVES_FILE}: {e}")
+        print("   This is expected on read-only filesystems (e.g., Vercel).")
+        print("   Derivative data is returned but not persisted to disk.")
+        # Don't raise - allow the function to continue
 
 def update_derivative(deriv_id, updates):
     """Update a derivative with new data"""

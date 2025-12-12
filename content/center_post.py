@@ -18,8 +18,15 @@ def load_content_posts():
 
 def save_content_posts(data):
     """Save content posts to JSON file"""
-    with open(CONTENT_POSTS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(CONTENT_POSTS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except (OSError, PermissionError) as e:
+        # Handle read-only filesystem (e.g., on Vercel)
+        print(f"⚠️ Warning: Could not save to {CONTENT_POSTS_FILE}: {e}")
+        print("   This is expected on read-only filesystems (e.g., Vercel).")
+        print("   Post data is returned but not persisted to disk.")
+        # Don't raise - allow the function to continue
 
 def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, include_cta=False):
     """

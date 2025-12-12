@@ -18,8 +18,15 @@ def load_pillars():
 
 def save_pillars(data):
     """Save pillar definitions"""
-    with open(CONTENT_PILLARS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(CONTENT_PILLARS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except (OSError, PermissionError) as e:
+        # Handle read-only filesystem (e.g., on Vercel)
+        print(f"⚠️ Warning: Could not save to {CONTENT_PILLARS_FILE}: {e}")
+        print("   This is expected on read-only filesystems (e.g., Vercel).")
+        print("   Pillar data is returned but not persisted to disk.")
+        # Don't raise - allow the function to continue
 
 def load_metrics():
     """Load content metrics"""
@@ -30,8 +37,15 @@ def load_metrics():
 
 def save_metrics(data):
     """Save content metrics"""
-    with open(CONTENT_METRICS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(CONTENT_METRICS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except (OSError, PermissionError) as e:
+        # Handle read-only filesystem (e.g., on Vercel)
+        print(f"⚠️ Warning: Could not save to {CONTENT_METRICS_FILE}: {e}")
+        print("   This is expected on read-only filesystems (e.g., Vercel).")
+        print("   Metrics data is returned but not persisted to disk.")
+        # Don't raise - allow the function to continue
 
 def create_pillar(client_id, name, color, channels=None, target_audience=None):
     """
