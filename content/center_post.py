@@ -35,18 +35,27 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, in
     Returns:
         dict: Created post data
     """
-    # Load client config
-    with open('clients.json', 'r') as f:
-        clients_data = json.load(f)
+    # Load client config - handle missing file gracefully
+    try:
+        with open('clients.json', 'r') as f:
+            clients_data = json.load(f)
+    except FileNotFoundError:
+        print(f"⚠️ clients.json not found, using dummy client for {client_id}")
+        clients_data = {"clients": []}
     
     client = None
-    for c in clients_data['clients']:
+    for c in clients_data.get('clients', []):
         if c.get('client_id') == client_id:
             client = c
             break
     
+    # If client not found, create a minimal client structure
     if not client:
-        raise ValueError(f"Client {client_id} not found")
+        print(f"⚠️ Client {client_id} not found in clients.json, using minimal client structure")
+        client = {
+            'client_id': client_id,
+            'brand': {}
+        }
     
     # Create post structure
     post_id = f"post_{uuid.uuid4().hex[:12]}"
