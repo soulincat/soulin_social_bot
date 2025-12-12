@@ -13,12 +13,8 @@ app = Flask(__name__,
             static_url_path='/web',
             template_folder='web/templates')
 
-# Content API routes
-from content.center_post import create_center_post, get_post, list_posts, update_post, delete_post
-from content.branch_generator import generate_branches
-from content.derivative_generator import generate_derivatives, get_derivatives
-from content.publisher import schedule_derivatives, publish_queued_derivatives, publish_to_beehiiv
-from content.pillar_tracker import create_pillar, get_pillars, get_pillar_performance, track_content_performance
+# Content API routes - lazy imports to avoid crashing if ANTHROPIC_API_KEY is missing
+# These will be imported inside the route handlers when needed
 
 @app.route('/')
 def index():
@@ -32,6 +28,7 @@ def index():
 @app.route('/api/content/posts', methods=['GET'])
 def api_list_posts():
     """List all content posts"""
+    from content.center_post import list_posts
     client_id = request.args.get('client_id')
     status = request.args.get('status')
     posts = list_posts(client_id=client_id, status=status)
@@ -40,6 +37,7 @@ def api_list_posts():
 @app.route('/api/content/posts', methods=['POST'])
 def api_create_post():
     """Create a new center post"""
+    from content.center_post import create_center_post
     data = request.json
     try:
         print(f"Creating post for client: {data.get('client_id')}, idea: {data.get('raw_idea')[:50]}...")
@@ -61,6 +59,7 @@ def api_create_post():
 @app.route('/api/content/posts/<post_id>', methods=['GET'])
 def api_get_post(post_id):
     """Get a specific post"""
+    from content.center_post import get_post
     post = get_post(post_id)
     if not post:
         return jsonify({"error": "Post not found"}), 404
@@ -69,6 +68,7 @@ def api_get_post(post_id):
 @app.route('/api/content/posts/<post_id>', methods=['PUT'])
 def api_update_post(post_id):
     """Update a post (status, pillar_id, etc.)"""
+    from content.center_post import update_post
     try:
         updates = request.json
         if not updates:
@@ -84,6 +84,7 @@ def api_update_post(post_id):
 @app.route('/api/content/posts/<post_id>/branch', methods=['POST'])
 def api_generate_branches(post_id):
     """Generate archive and blog versions"""
+    from content.branch_generator import generate_branches
     try:
         post = generate_branches(post_id)
         return jsonify(post)
@@ -93,6 +94,8 @@ def api_generate_branches(post_id):
 @app.route('/api/content/posts/<post_id>/generate', methods=['POST'])
 def api_generate_derivatives(post_id):
     """Generate derivatives for selected platforms"""
+    from content.center_post import get_post
+    from content.derivative_generator import generate_derivatives
     data = request.json or {}
     platforms = data.get('platforms', ['linkedin', 'x', 'threads', 'instagram', 'substack', 'telegram'])
     try:
@@ -113,6 +116,7 @@ def api_generate_derivatives(post_id):
 @app.route('/api/content/posts/<post_id>/schedule', methods=['POST'])
 def api_schedule_derivatives(post_id):
     """Schedule derivatives for publishing"""
+    from content.publisher import schedule_derivatives
     schedule_config = request.json
     try:
         derivatives = schedule_derivatives(post_id, schedule_config)
@@ -123,6 +127,7 @@ def api_schedule_derivatives(post_id):
 @app.route('/api/content/derivatives', methods=['GET'])
 def api_list_derivatives():
     """List derivatives"""
+    from content.derivative_generator import get_derivatives
     post_id = request.args.get('post_id')
     status = request.args.get('status')
     derivatives = get_derivatives(post_id=post_id, status=status)
@@ -212,13 +217,13 @@ def api_regenerate_derivative(deriv_id):
                         brand_socials = client.get('brand', {}).get('socials', {})
                         # Get CTA info if post has include_cta flag
                         if post.get('include_cta'):
-                                main_product = client.get('brand', {}).get('main_product', {})
-                                if main_product.get('cta_text') and main_product.get('cta_url'):
-                                    cta_info = {
-                                        'text': main_product['cta_text'],
-                                        'url': main_product['cta_url']
-                                    }
-                            break
+                            main_product = client.get('brand', {}).get('main_product', {})
+                            if main_product.get('cta_text') and main_product.get('cta_url'):
+                                cta_info = {
+                                    'text': main_product['cta_text'],
+                                    'url': main_product['cta_url']
+                                }
+                        break
             except Exception as e:
                 print(f"Warning: Could not load brand settings: {e}")
         
@@ -283,6 +288,7 @@ def api_publish_derivative(deriv_id):
         
         # Publish based on type
         if deriv_type == 'newsletter':
+            from content.publisher import publish_to_beehiiv
             result = publish_to_beehiiv(derivative, client_id)
             
             if result.get('success'):
@@ -315,6 +321,7 @@ def api_publish_derivative(deriv_id):
 @app.route('/api/content/pillars', methods=['GET'])
 def api_list_pillars():
     """List content pillars"""
+    from content.pillar_tracker import get_pillars
     client_id = request.args.get('client_id')
     pillars = get_pillars(client_id=client_id)
     return jsonify({"pillars": pillars})
@@ -322,6 +329,7 @@ def api_list_pillars():
 @app.route('/api/content/pillars', methods=['POST'])
 def api_create_pillar():
     """Create a new pillar"""
+    from content.pillar_tracker import create_pillar
     data = request.json
     try:
         pillar = create_pillar(
@@ -338,6 +346,7 @@ def api_create_pillar():
 @app.route('/api/content/pillars/<pillar_id>/performance', methods=['GET'])
 def api_get_pillar_performance(pillar_id):
     """Get pillar performance metrics"""
+    from content.pillar_tracker import get_pillar_performance
     days = request.args.get('days', 30, type=int)
     try:
         performance = get_pillar_performance(pillar_id, date_range_days=days)
@@ -348,6 +357,7 @@ def api_get_pillar_performance(pillar_id):
 @app.route('/api/content/posts/<post_id>/performance', methods=['POST'])
 def api_track_performance(post_id):
     """Track content performance"""
+    from content.pillar_tracker import track_content_performance
     metrics = request.json
     try:
         result = track_content_performance(post_id, metrics)
