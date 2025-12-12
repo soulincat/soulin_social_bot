@@ -509,19 +509,31 @@
         
         async function loadPost() {
             try {
+                console.log('Loading post:', postId);
                 const response = await fetch(`/api/content/posts/${postId}`);
                 
                 if (!response.ok) {
-                    throw new Error(`Failed to load post: ${response.status} ${response.statusText}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Failed to load post:', response.status, errorData);
+                    throw new Error(`Failed to load post: ${response.status} ${response.statusText}. ${errorData.error || ''}`);
                 }
                 
                 const post = await response.json();
                 
                 // Debug: log the post data
                 console.log('Post data received:', post);
+                console.log('Post has raw_idea:', !!post.raw_idea);
+                console.log('Post has center_post:', !!post.center_post);
+                console.log('Post status:', post.status);
                 
-                if (!post || (!post.raw_idea && !post.center_post)) {
-                    throw new Error('Post data is empty or invalid');
+                if (!post) {
+                    throw new Error('Post data is null or undefined');
+                }
+                
+                // Ensure raw_idea exists (should always be present)
+                if (!post.raw_idea && !post.center_post) {
+                    console.warn('Post missing both raw_idea and center_post:', post);
+                    post.raw_idea = 'No idea provided';
                 }
                 
                 document.getElementById('post-title').textContent = post.center_post?.title || post.raw_idea?.substring(0, 50) || 'Untitled';
