@@ -40,7 +40,7 @@ def api_create_post():
     from content.center_post import create_center_post
     data = request.json
     try:
-        print(f"Creating post for client: {data.get('client_id')}, idea: {data.get('raw_idea')[:50]}...")
+        print(f"Creating post for client: {data.get('client_id')}, idea: {data.get('raw_idea', '')[:50]}...")
         post = create_center_post(
             client_id=data.get('client_id'),
             raw_idea=data.get('raw_idea', ''),
@@ -48,10 +48,15 @@ def api_create_post():
             pillar_id=data.get('pillar_id'),
             include_cta=data.get('include_cta', False)
         )
-        print(f"Post created successfully: {post.get('id')}, status: {post.get('status')}")
+        print(f"✅ Post created successfully: {post.get('id')}, status: {post.get('status')}")
+        print(f"📝 Post has raw_idea: {bool(post.get('raw_idea'))}")
+        print(f"📝 Post has center_post: {bool(post.get('center_post'))}")
+        # Ensure all required fields are present
+        if not post.get('raw_idea'):
+            post['raw_idea'] = data.get('raw_idea', '')
         return jsonify(post), 201
     except Exception as e:
-        print(f"Error creating post: {str(e)}")
+        print(f"❌ Error creating post: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
