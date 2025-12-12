@@ -1072,6 +1072,83 @@ def api_get_weekly_posts():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/dashboard/metrics', methods=['GET'])
+def api_get_dashboard_metrics():
+    """Get hero metrics (impressions, email capture, client calls)"""
+    try:
+        client_id = request.args.get('client_id')
+        if not client_id:
+            return jsonify({"error": "client_id required"}), 400
+        
+        # Load client config - fallback to dummy data if not found
+        try:
+            with open('clients.json', 'r') as f:
+                clients_data = json.load(f)
+        except FileNotFoundError:
+            print("⚠️ clients.json not found, using dummy data for metrics")
+            clients_data = {"clients": []}
+        
+        client = None
+        for c in clients_data.get('clients', []):
+            if c.get('client_id') == client_id:
+                client = c
+                break
+        
+        # If client not found, use dummy client structure
+        if not client:
+            print(f"⚠️ Client {client_id} not found, using dummy data")
+            client = {
+                'client_id': client_id,
+                'brand': {},
+                'funnel_structure': {}
+            }
+        
+        # Calculate metrics from funnel structure or use dummy data
+        funnel_structure = client.get('funnel_structure', {})
+        awareness_channels = funnel_structure.get('awareness', {}).get('channels', [])
+        
+        # Calculate total impressions from awareness channels (would come from APIs in production)
+        total_impressions = 0
+        for channel in awareness_channels:
+            # In production, would fetch from channel APIs
+            # For now, use dummy values
+            metric_name = channel.get('metric_name', '')
+            if 'blog' in metric_name.lower():
+                total_impressions += 1234
+            elif 'instagram' in metric_name.lower() or 'ig' in metric_name.lower():
+                total_impressions += 5678
+            elif 'linkedin' in metric_name.lower():
+                total_impressions += 890
+        
+        # If no channels configured, use dummy total
+        if total_impressions == 0:
+            total_impressions = 7802  # Blog (1234) + Instagram (5678) + LinkedIn (890)
+        
+        # Get email capture from capture stage (would come from Beehiiv API)
+        capture_config = funnel_structure.get('capture', {})
+        email_capture = 23  # Would come from Beehiiv API
+        if capture_config.get('platform') == 'beehiiv':
+            # In production, would fetch from Beehiiv API
+            pass
+        
+        # Get client calls from conversion stage (manual entry)
+        conversion_config = funnel_structure.get('conversion', {})
+        client_calls = 1  # Would come from manual metrics
+        
+        # Calculate capture rate
+        capture_rate = (email_capture / total_impressions * 100) if total_impressions > 0 else 0
+        
+        return jsonify({
+            'total_impressions': total_impressions,
+            'email_capture': email_capture,
+            'capture_rate': round(capture_rate, 1),
+            'client_calls': client_calls
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/dashboard/analysis', methods=['GET'])
 def api_get_dashboard_analysis():
     """Get analysis for a specific dashboard area"""
@@ -1142,7 +1219,11 @@ def api_get_dashboard_analysis():
         # Generate analysis for the requested area
         analysis = generate_area_analysis(area, metrics, bottleneck_name, action_plan)
         
-        return jsonify({"analysis": analysis})
+        # Include metrics in response for frontend use
+        return jsonify({
+            "analysis": analysis,
+            "metrics": metrics
+        })
     except Exception as e:
         import traceback
         traceback.print_exc()
