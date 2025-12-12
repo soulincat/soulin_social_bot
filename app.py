@@ -544,6 +544,19 @@ def api_get_social_profiles():
                         print(f"❌ Error scraping {platform_info['name']}: {e}")
                 elif not (platform_id == 'instagram' and connected.get('connected')):
                     print(f"ℹ️ {platform_info['name']} is enabled but no profile URL provided (showing placeholder)")
+                    # Add dummy data for testing when no URL provided
+                    if not profile_data['followers']:
+                        dummy_followers = {
+                            'linkedin': 1250,
+                            'x': 3200,
+                            'threads': 890,
+                            'instagram': 5600,
+                            'substack': 450,
+                            'telegram': 1200
+                        }
+                        profile_data['followers'] = dummy_followers.get(platform_id, 0)
+                        profile_data['username'] = f'@{platform_id}_example'
+                        profile_data['description'] = f'Professional {platform_info["name"]} profile'
                 
                 total_followers += profile_data['followers']
                 profiles.append(profile_data)
