@@ -10,15 +10,35 @@ from .ai_client import ClaudeClient
 
 CONTENT_DERIVATIVES_FILE = 'content_derivatives.json'
 
+# In-memory cache for derivatives created during session (for read-only filesystems like Vercel)
+_in_memory_derivatives = {}
+
 def load_derivatives():
-    """Load all derivatives from JSON file"""
+    """Load all derivatives from JSON file and merge with in-memory cache"""
+    # Load from file
+    file_derivatives = []
     if os.path.exists(CONTENT_DERIVATIVES_FILE):
-        with open(CONTENT_DERIVATIVES_FILE, 'r') as f:
-            return json.load(f)
-    return {"derivatives": []}
+        try:
+            with open(CONTENT_DERIVATIVES_FILE, 'r') as f:
+                file_data = json.load(f)
+                file_derivatives = file_data.get('derivatives', [])
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load {CONTENT_DERIVATIVES_FILE}: {e}")
+    
+    # Merge with in-memory derivatives (in-memory takes precedence)
+    all_derivatives = {deriv['id']: deriv for deriv in file_derivatives}
+    all_derivatives.update(_in_memory_derivatives)
+    
+    return {"derivatives": list(all_derivatives.values())}
 
 def save_derivatives(data):
-    """Save derivatives to JSON file"""
+    """Save derivatives to JSON file and update in-memory cache"""
+    # Update in-memory cache with all derivatives
+    global _in_memory_derivatives
+    for deriv in data.get('derivatives', []):
+        _in_memory_derivatives[deriv['id']] = deriv
+    
+    # Try to save to file
     try:
         with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
             json.dump(data, f, indent=2)
@@ -26,7 +46,7 @@ def save_derivatives(data):
         # Handle read-only filesystem (e.g., on Vercel)
         print(f"⚠️ Warning: Could not save to {CONTENT_DERIVATIVES_FILE}: {e}")
         print("   This is expected on read-only filesystems (e.g., Vercel).")
-        print("   Derivative data is returned but not persisted to disk.")
+        print("   Derivative data is cached in memory for this session.")
         # Don't raise - allow the function to continue
 
 def update_derivative(deriv_id, updates):

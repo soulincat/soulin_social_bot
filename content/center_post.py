@@ -9,15 +9,35 @@ from .ai_client import ClaudeClient
 
 CONTENT_POSTS_FILE = 'content_posts.json'
 
+# In-memory cache for posts created during session (for read-only filesystems like Vercel)
+_in_memory_posts = {}
+
 def load_content_posts():
-    """Load all content posts from JSON file"""
+    """Load all content posts from JSON file and merge with in-memory cache"""
+    # Load from file
+    file_posts = []
     if os.path.exists(CONTENT_POSTS_FILE):
-        with open(CONTENT_POSTS_FILE, 'r') as f:
-            return json.load(f)
-    return {"posts": []}
+        try:
+            with open(CONTENT_POSTS_FILE, 'r') as f:
+                file_data = json.load(f)
+                file_posts = file_data.get('posts', [])
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load {CONTENT_POSTS_FILE}: {e}")
+    
+    # Merge with in-memory posts (in-memory takes precedence)
+    all_posts = {post['id']: post for post in file_posts}
+    all_posts.update(_in_memory_posts)
+    
+    return {"posts": list(all_posts.values())}
 
 def save_content_posts(data):
-    """Save content posts to JSON file"""
+    """Save content posts to JSON file and update in-memory cache"""
+    # Update in-memory cache with all posts
+    global _in_memory_posts
+    for post in data.get('posts', []):
+        _in_memory_posts[post['id']] = post
+    
+    # Try to save to file
     try:
         with open(CONTENT_POSTS_FILE, 'w') as f:
             json.dump(data, f, indent=2)
@@ -25,7 +45,7 @@ def save_content_posts(data):
         # Handle read-only filesystem (e.g., on Vercel)
         print(f"⚠️ Warning: Could not save to {CONTENT_POSTS_FILE}: {e}")
         print("   This is expected on read-only filesystems (e.g., Vercel).")
-        print("   Post data is returned but not persisted to disk.")
+        print("   Post data is cached in memory for this session.")
         # Don't raise - allow the function to continue
 
 def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, include_cta=False):
