@@ -510,7 +510,19 @@
         async function loadPost() {
             try {
                 const response = await fetch(`/api/content/posts/${postId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load post: ${response.status} ${response.statusText}`);
+                }
+                
                 const post = await response.json();
+                
+                // Debug: log the post data
+                console.log('Post data received:', post);
+                
+                if (!post || (!post.raw_idea && !post.center_post)) {
+                    throw new Error('Post data is empty or invalid');
+                }
                 
                 document.getElementById('post-title').textContent = post.center_post?.title || post.raw_idea?.substring(0, 50) || 'Untitled';
                 

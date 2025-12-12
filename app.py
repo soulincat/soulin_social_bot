@@ -60,10 +60,17 @@ def api_create_post():
 def api_get_post(post_id):
     """Get a specific post"""
     from content.center_post import get_post
-    post = get_post(post_id)
-    if not post:
-        return jsonify({"error": "Post not found"}), 404
-    return jsonify(post)
+    try:
+        post = get_post(post_id)
+        if not post:
+            print(f"❌ Post {post_id} not found in storage")
+            return jsonify({"error": "Post not found", "post_id": post_id}), 404
+        print(f"✅ Returning post {post_id} with status: {post.get('status')}")
+        return jsonify(post)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/content/posts/<post_id>', methods=['PUT'])
 def api_update_post(post_id):

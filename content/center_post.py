@@ -174,9 +174,15 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, in
 def get_post(post_id):
     """Get a specific post by ID"""
     data = load_content_posts()
-    for post in data['posts']:
-        if post['id'] == post_id:
+    posts = data.get('posts', [])
+    print(f"🔍 Looking for post_id: {post_id}")
+    print(f"📊 Total posts loaded: {len(posts)}")
+    for post in posts:
+        if post.get('id') == post_id:
+            print(f"✅ Found post: {post_id}")
             return post
+    print(f"❌ Post not found: {post_id}")
+    print(f"Available post IDs: {[p.get('id') for p in posts[:5]]}")
     return None
 
 def list_posts(client_id=None, status=None):
