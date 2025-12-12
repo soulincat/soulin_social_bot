@@ -16,11 +16,49 @@
             background: rgba(255, 255, 255, 0.05);
             padding: 1rem;
             border-radius: 12px;
-            max-height: 300px;
+            max-height: 400px;
+            height: 400px;
             overflow-y: auto;
+            overflow-x: hidden;
             white-space: pre-wrap;
             font-size: 0.9rem;
             line-height: 1.6;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: block;
+        }
+        .content-preview::-webkit-scrollbar {
+            width: 8px;
+        }
+        .content-preview::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .content-preview::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .content-preview::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .content-preview:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .content-preview::after {
+            content: 'Click to view full content';
+            position: absolute;
+            bottom: 0.5rem;
+            right: 0.5rem;
+            font-size: 0.75rem;
+            color: #a8b2d1;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .content-preview:hover::after {
+            opacity: 1;
         }
         .check-badge {
             display: inline-block;
@@ -122,6 +160,13 @@
             background: rgba(255, 255, 255, 0.03);
             padding: 1.25rem;
             border-radius: 8px;
+            max-height: 400px;
+            min-height: 150px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
             white-space: pre-wrap;
             font-size: 0.9rem;
             line-height: 1.7;
@@ -129,6 +174,29 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
             margin-top: 0.75rem;
+            display: block;
+            box-sizing: border-box;
+        }
+        .social-content::-webkit-scrollbar {
+            width: 10px;
+        }
+        .social-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            margin: 4px;
+        }
+        .social-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+        }
+        .social-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        /* Firefox scrollbar */
+        .social-content {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.08);
         }
         .social-meta {
             display: flex;
@@ -208,10 +276,54 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
         }
         .btn-edit:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.3);
+        }
+        .btn-copy {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .btn-copy:hover {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        .social-content:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .social-content::after {
+            content: 'Click to view full';
+            position: absolute;
+            bottom: 0.5rem;
+            right: 0.5rem;
+            font-size: 0.7rem;
+            color: #a8b2d1;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            background: rgba(3, 7, 18, 0.8);
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .social-content:hover::after {
+            opacity: 1;
         }
         .edit-textarea {
             width: 100%;
@@ -268,6 +380,103 @@
             border-radius: 12px;
             padding: 1rem;
         }
+        /* Content Popup Modal - Glassmorphism Style */
+        .content-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 1000;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .content-popup.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .content-popup-inner {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .content-popup-inner::-webkit-scrollbar {
+            width: 8px;
+        }
+        .content-popup-inner::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .content-popup-inner::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .content-popup-inner::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .content-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .content-popup-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .content-popup-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            font-weight: 300;
+        }
+        .content-popup-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        .content-popup-body {
+            color: #ffffff;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Inter', sans-serif;
+        }
+        .content-popup-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -312,9 +521,12 @@
                     <section class="glass-card content-section">
                         <div class="section-header">
                             <div class="panel-title">Original Idea</div>
-                            <button class="btn-edit" onclick="editIdea()">Edit</button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn-copy" onclick="copyContent('idea', \`${(post.raw_idea || 'No idea provided').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, event)">📋 Copy</button>
+                                <button class="btn-edit" onclick="editIdea()">✏️ Edit</button>
+                            </div>
                         </div>
-                        <div id="idea-display" style="background: rgba(255, 255, 255, 0.05); padding: 1.25rem; border-radius: 12px; border-left: 3px solid rgba(168, 85, 247, 0.5);">
+                        <div id="idea-display" style="background: rgba(255, 255, 255, 0.05); padding: 1.25rem; border-radius: 12px; border-left: 3px solid rgba(168, 85, 247, 0.5); max-height: 400px; overflow-y: auto; cursor: pointer;" onclick="showContentPopup('Original Idea', \`${(post.raw_idea || 'No idea provided').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n')}\`)">
                             <p style="color: #ffffff; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; margin: 0;">${post.raw_idea || 'No idea provided'}</p>
                         </div>
                     </section>
@@ -322,12 +534,17 @@
                     <section class="glass-card content-section">
                         <div class="section-header">
                             <div class="panel-title">Newsletter (Center Post)</div>
-                            ${post.center_post ? `<button class="btn-edit" onclick="editNewsletter()">Edit</button>` : ''}
+                            ${post.center_post ? `
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="btn-copy" onclick="copyContent('newsletter', \`${(post.center_post.content || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, event)">📋 Copy</button>
+                                    <button class="btn-edit" onclick="editNewsletter()">✏️ Edit</button>
+                                </div>
+                            ` : ''}
                         </div>
                         ${post.center_post ? `
                             <div id="newsletter-display">
                                 <h2>${post.center_post.title}</h2>
-                                <div class="content-preview">${post.center_post.content}</div>
+                                <div class="content-preview" onclick="showContentPopup('${post.center_post.title.replace(/'/g, "\\'")}', \`${(post.center_post.content || '').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n')}\`)">${(post.center_post.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
                                 <div style="margin-top: 1rem;">
                                     <strong>Validation Checks:</strong><br>
                                     ${Object.entries(checks).map(([key, value]) => `
@@ -336,9 +553,12 @@
                                         </span>
                                     `).join('')}
                                 </div>
-                                <p style="color: #a8b2d1; margin-top: 0.5rem;">
-                                    ${post.center_post.word_count} words
-                                </p>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                                    <p style="color: #a8b2d1; margin: 0;">
+                                        ${post.center_post.word_count} words
+                                    </p>
+                                    <button id="publish-newsletter-btn" class="glass-button" onclick="publishNewsletterFromPost()" style="display: none;">Publish to Beehiiv</button>
+                                </div>
                             </div>
                         ` : `
                             <p style="color: #a8b2d1;">Draft - not yet expanded</p>
@@ -447,9 +667,10 @@
             }
             
             // Filter by selected platforms if any are selected
-            let filtered = allDerivatives;
+            // Also exclude newsletter type from socials section
+            let filtered = allDerivatives.filter(deriv => deriv.type !== 'newsletter');
             if (filteredPlatforms.size > 0) {
-                filtered = allDerivatives.filter(deriv => {
+                filtered = filtered.filter(deriv => {
                     const platform = deriv.type.toLowerCase();
                     return filteredPlatforms.has(platform);
                 });
@@ -506,19 +727,17 @@
                 
                 // Action buttons
                 let actionButtons = '';
+                const contentForPopup = (deriv.content || 'No content').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/'/g, "\\'");
+                
+                // Newsletter derivatives are not shown in socials section
+                // Skip rendering newsletter type here
                 if (isNewsletter) {
-                    if (isPublished) {
-                        actionButtons = `<button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>`;
-                    } else if (isApproved || isQueued) {
-                        actionButtons = `
-                            <button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>
-                            <button class="glass-button" style="margin-left: 0.5rem;" onclick="publishNewsletter('${deriv.id}')">Publish to Beehiiv</button>
-                        `;
-                    } else {
-                        actionButtons = `<button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>`;
-                    }
+                    return ''; // Don't render newsletter in socials section
                 } else {
-                    actionButtons = `<button class="btn-edit" onclick="editSocialPost('${deriv.id}')">Edit</button>`;
+                    actionButtons = `
+                        <button class="btn-copy" onclick="copyContent('social-${deriv.id}', \`${contentForPopup}\`)" title="Copy content">📋</button>
+                        <button class="btn-edit" onclick="editSocialPost('${deriv.id}')">✏️ Edit</button>
+                    `;
                 }
                 
                 return `
@@ -541,7 +760,7 @@
                                 <button class="btn-small btn-regenerate" onclick="regeneratePost('${deriv.id}')">Regenerate</button>
                             </div>
                         </div>
-                        <div id="social-content-${deriv.id}" class="social-content">${deriv.content || 'No content'}</div>
+                        <div id="social-content-${deriv.id}" class="social-content" onclick="showContentPopup('${platformName} Post', \`${contentForPopup}\`)" style="max-height: 400px; min-height: 150px; overflow-y: auto; overflow-x: hidden; display: block; box-sizing: border-box;">${(deriv.content || 'No content').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
                     </div>
                 `;
             }).join('');
@@ -553,8 +772,27 @@
                 const data = await response.json();
                 allDerivatives = data.derivatives || [];
                 
+                // Check for newsletter derivative and show/hide publish button
+                const newsletterDeriv = allDerivatives.find(d => d.type === 'newsletter');
+                const publishBtn = document.getElementById('publish-newsletter-btn');
+                if (publishBtn) {
+                    if (newsletterDeriv) {
+                        const status = newsletterDeriv.metadata?.status || 'draft';
+                        if (status === 'approved' || status === 'queued') {
+                            publishBtn.style.display = 'block';
+                            publishBtn.setAttribute('data-deriv-id', newsletterDeriv.id);
+                        } else {
+                            publishBtn.style.display = 'none';
+                        }
+                    } else {
+                        publishBtn.style.display = 'none';
+                    }
+                }
+                
                 const listEl = document.getElementById('derivatives-list');
-                if (allDerivatives.length === 0) {
+                // Filter out newsletter from socials
+                const socialDerivatives = allDerivatives.filter(d => d.type !== 'newsletter');
+                if (socialDerivatives.length === 0) {
                     listEl.innerHTML = '<p style="color: #a8b2d1;">No socials generated yet. Select platforms and click "Generate Selected" to create posts.</p>';
                     // Clear any selected platforms when no content exists
                     selectedPlatforms.clear();
@@ -729,7 +967,16 @@
                 });
                 if (response.ok) {
                     const contentEl = document.getElementById(`social-content-${derivId}`);
-                    contentEl.innerHTML = newContent || 'No content';
+                    const escapedContent = (newContent || 'No content').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const contentForPopup = (newContent || 'No content').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/'/g, "\\'");
+                    contentEl.innerHTML = escapedContent;
+                    contentEl.setAttribute('onclick', `showContentPopup('Social Post', \`${contentForPopup}\`)`);
+                    contentEl.style.maxHeight = '400px';
+                    contentEl.style.minHeight = '150px';
+                    contentEl.style.overflowY = 'auto';
+                    contentEl.style.overflowX = 'hidden';
+                    contentEl.style.display = 'block';
+                    contentEl.style.boxSizing = 'border-box';
                     alert('Social post updated successfully!');
                 } else {
                     const data = await response.json();
@@ -742,7 +989,119 @@
         
         function cancelEditSocialPost(derivId, originalContent) {
             const contentEl = document.getElementById(`social-content-${derivId}`);
-            contentEl.innerHTML = originalContent || 'No content';
+            // Restore with click handler
+            const contentForPopup = (originalContent || 'No content').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/'/g, "\\'");
+            const escapedContent = (originalContent || 'No content').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            contentEl.innerHTML = escapedContent;
+            contentEl.setAttribute('onclick', `showContentPopup('Social Post', \`${contentForPopup}\`)`);
+            contentEl.style.maxHeight = '400px';
+            contentEl.style.minHeight = '150px';
+            contentEl.style.overflowY = 'auto';
+            contentEl.style.overflowX = 'hidden';
+            contentEl.style.display = 'block';
+            contentEl.style.boxSizing = 'border-box';
+        }
+        
+        // Copy content to clipboard
+        async function copyContent(type, content, event) {
+            try {
+                await navigator.clipboard.writeText(content);
+                // Show feedback
+                const button = (event || window.event)?.target?.closest('.btn-copy');
+                if (button) {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✓ Copied!';
+                    button.style.color = '#22c55e';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.color = '';
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            }
+        }
+        
+        // Show content popup
+        function showContentPopup(title, content) {
+            // Prevent popup when clicking inside edit mode
+            if (event.target.closest('.edit-textarea') || event.target.closest('.edit-actions')) {
+                return;
+            }
+            
+            let popup = document.getElementById('content-popup');
+            if (!popup) {
+                // Create popup if it doesn't exist
+                const popupHTML = `
+                    <div id="content-popup" class="content-popup">
+                        <div class="content-popup-inner">
+                            <div class="content-popup-header">
+                                <div class="content-popup-title">${title}</div>
+                                <button class="content-popup-close" onclick="closeContentPopup()">×</button>
+                            </div>
+                            <div class="content-popup-body" id="popup-content-body"></div>
+                            <div class="content-popup-actions">
+                                <button class="btn-copy" onclick="copyPopupContent()">📋 Copy Content</button>
+                                <button class="btn-cancel" onclick="closeContentPopup()">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', popupHTML);
+                popup = document.getElementById('content-popup');
+            }
+            
+            const popupBody = document.getElementById('popup-content-body');
+            popupBody.textContent = content;
+            
+            popup.classList.add('active');
+            
+            // Store content for copy function
+            popup.dataset.content = content;
+            
+            // Close on escape key
+            const escapeHandler = function(e) {
+                if (e.key === 'Escape') {
+                    closeContentPopup();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+            
+            // Close on background click
+            popup.addEventListener('click', function(e) {
+                if (e.target === popup) {
+                    closeContentPopup();
+                }
+            });
+        }
+        
+        function closeContentPopup() {
+            const popup = document.getElementById('content-popup');
+            if (popup) {
+                popup.classList.remove('active');
+            }
+        }
+        
+        function copyPopupContent() {
+            const popup = document.getElementById('content-popup');
+            if (popup && popup.dataset.content) {
+                const content = popup.dataset.content;
+                navigator.clipboard.writeText(content).then(() => {
+                    const button = event.target;
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✓ Copied!';
+                    button.style.color = '#22c55e';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert('Failed to copy to clipboard');
+                });
+            }
         }
         
         async function generateDerivatives() {
@@ -787,6 +1146,52 @@
                 const btn = document.getElementById('generate-btn');
                 btn.disabled = false;
                 updateGenerateButton();
+            }
+        }
+        
+        async function publishNewsletterFromPost() {
+            const publishBtn = document.getElementById('publish-newsletter-btn');
+            const derivId = publishBtn?.getAttribute('data-deriv-id');
+            
+            if (!derivId) {
+                // Find newsletter derivative
+                const response = await fetch(`/api/content/derivatives?post_id=${postId}`);
+                const data = await response.json();
+                const newsletterDeriv = data.derivatives?.find(d => d.type === 'newsletter');
+                if (!newsletterDeriv) {
+                    alert('Newsletter derivative not found. Please generate derivatives first.');
+                    return;
+                }
+                await publishNewsletter(newsletterDeriv.id);
+            } else {
+                await publishNewsletter(derivId);
+            }
+        }
+        
+        async function publishNewsletter(derivId) {
+            if (!confirm('Publish this newsletter to Beehiiv?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/content/derivatives/${derivId}/publish`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message || 'Newsletter published successfully!');
+                    if (data.published_url) {
+                        console.log('Published URL:', data.published_url);
+                    }
+                    // Reload derivatives to update status
+                    await loadDerivatives();
+                } else {
+                    alert(`Error: ${data.error || 'Failed to publish'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
             }
         }
         
