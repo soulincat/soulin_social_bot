@@ -10,12 +10,24 @@ from .ai_client import ClaudeClient
 
 CONTENT_DERIVATIVES_FILE = 'content_derivatives.json'
 
-# In-memory cache for derivatives created during session (for read-only filesystems like Vercel)
+# In-memory cache for derivatives created during session (fallback)
 _in_memory_derivatives = {}
 
 def load_derivatives():
-    """Load all derivatives from JSON file and merge with in-memory cache"""
-    # Load from file
+    """Load all derivatives from KV, file, or memory cache"""
+    # Try KV first (for Vercel)
+    try:
+        from .storage import load_derivatives
+        kv_data = load_derivatives()
+        if kv_data:
+            # Merge with in-memory cache
+            all_derivatives = {deriv['id']: deriv for deriv in kv_data.get('derivatives', [])}
+            all_derivatives.update(_in_memory_derivatives)
+            return {"derivatives": list(all_derivatives.values())}
+    except Exception as e:
+        print(f"⚠️ KV not available: {e}")
+    
+    # Fallback to file
     file_derivatives = []
     if os.path.exists(CONTENT_DERIVATIVES_FILE):
         try:
@@ -32,21 +44,31 @@ def load_derivatives():
     return {"derivatives": list(all_derivatives.values())}
 
 def save_derivatives(data):
-    """Save derivatives to JSON file and update in-memory cache"""
-    # Update in-memory cache with all derivatives
+    """Save derivatives to KV, file, or memory cache"""
+    # Update in-memory cache
     global _in_memory_derivatives
     for deriv in data.get('derivatives', []):
         _in_memory_derivatives[deriv['id']] = deriv
     
-    # Try to save to file
+    # Try KV first (for Vercel)
+    try:
+        from .storage import save_derivatives
+        if save_derivatives(data):
+            print("✅ Saved derivatives to Vercel KV")
+            return
+    except Exception as e:
+        print(f"⚠️ KV not available: {e}")
+    
+    # Fallback to file
     try:
         with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
             json.dump(data, f, indent=2)
+        print("✅ Saved derivatives to file")
     except (OSError, PermissionError) as e:
-        # Handle read-only filesystem (e.g., on Vercel)
+        # Handle read-only filesystem (e.g., on Vercel without KV)
         print(f"⚠️ Warning: Could not save to {CONTENT_DERIVATIVES_FILE}: {e}")
-        print("   This is expected on read-only filesystems (e.g., Vercel).")
-        print("   Derivative data is cached in memory for this session.")
+        print("   Derivative data is cached in memory for this session only.")
+        print("   To persist data, set up Vercel KV in your Vercel project settings.")
         # Don't raise - allow the function to continue
 
 def update_derivative(deriv_id, updates):

@@ -9,12 +9,24 @@ from .ai_client import ClaudeClient
 
 CONTENT_POSTS_FILE = 'content_posts.json'
 
-# In-memory cache for posts created during session (for read-only filesystems like Vercel)
+# In-memory cache for posts created during session (fallback)
 _in_memory_posts = {}
 
 def load_content_posts():
-    """Load all content posts from JSON file and merge with in-memory cache"""
-    # Load from file
+    """Load all content posts from KV, file, or memory cache"""
+    # Try KV first (for Vercel)
+    try:
+        from .storage import load_posts
+        kv_data = load_posts()
+        if kv_data:
+            # Merge with in-memory cache
+            all_posts = {post['id']: post for post in kv_data.get('posts', [])}
+            all_posts.update(_in_memory_posts)
+            return {"posts": list(all_posts.values())}
+    except Exception as e:
+        print(f"⚠️ KV not available: {e}")
+    
+    # Fallback to file
     file_posts = []
     if os.path.exists(CONTENT_POSTS_FILE):
         try:
@@ -31,21 +43,31 @@ def load_content_posts():
     return {"posts": list(all_posts.values())}
 
 def save_content_posts(data):
-    """Save content posts to JSON file and update in-memory cache"""
-    # Update in-memory cache with all posts
+    """Save content posts to KV, file, or memory cache"""
+    # Update in-memory cache
     global _in_memory_posts
     for post in data.get('posts', []):
         _in_memory_posts[post['id']] = post
     
-    # Try to save to file
+    # Try KV first (for Vercel)
+    try:
+        from .storage import save_posts
+        if save_posts(data):
+            print("✅ Saved posts to Vercel KV")
+            return
+    except Exception as e:
+        print(f"⚠️ KV not available: {e}")
+    
+    # Fallback to file
     try:
         with open(CONTENT_POSTS_FILE, 'w') as f:
             json.dump(data, f, indent=2)
+        print("✅ Saved posts to file")
     except (OSError, PermissionError) as e:
-        # Handle read-only filesystem (e.g., on Vercel)
+        # Handle read-only filesystem (e.g., on Vercel without KV)
         print(f"⚠️ Warning: Could not save to {CONTENT_POSTS_FILE}: {e}")
-        print("   This is expected on read-only filesystems (e.g., Vercel).")
-        print("   Post data is cached in memory for this session.")
+        print("   Post data is cached in memory for this session only.")
+        print("   To persist data, set up Vercel KV in your Vercel project settings.")
         # Don't raise - allow the function to continue
 
 def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, include_cta=False):
