@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace - Soul in Social</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/web/styles/dashboard.css">
+</head>
+<body>
+    <canvas id="noise-canvas"></canvas>
+    <main>
+        <header class="app-header">
+            <div class="brand-mark">
+                <div class="logo-glyph">
+                    <img id="user-profile-pic" src="/web/assets/default-avatar.png" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(168, 85, 247, 0.3);" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
+                <div>
+                    <p class="pill-badge">Workspace</p>
+                    <h1>My Projects</h1>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
+                <a href="/content" class="ghost-button">Posts</a>
+                <a href="/settings" class="ghost-button">Settings</a>
+                <a href="#" id="new-post-link" class="glass-button">+ New Post</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()">Logout</button>
+            </div>
+        </header>
+
+        <section class="hero glass-card">
+            <div>
+                <h1>Workspace Overview</h1>
+                <p style="color: #a8b2d1; margin-top: 0.35rem;">Manage all your projects in one place</p>
+            </div>
+            <span class="glow-ring"></span>
+        </section>
+
+        <section class="glass-card" id="projects-section">
+            <div class="panel-title">Projects</div>
+            <div id="projects-grid" class="projects-grid">
+                <div class="loading-skeleton">
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+            </div>
+            <div id="empty-state" style="display: none; text-align: center; padding: 4rem 2rem;">
+                <p style="color: #a8b2d1; font-size: 1.1rem; margin-bottom: 1rem;">No projects yet</p>
+                <p style="color: #6b7280; font-size: 0.9rem;">Create your first project to get started</p>
+            </div>
+        </section>
+    </main>
+
+    <style>
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .project-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #a855f7, #3b82f6);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 8px 32px rgba(168, 85, 247, 0.2);
+        }
+
+        .project-card:hover::before {
+            opacity: 1;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .project-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .project-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-status-active {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-status-inactive {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(107, 114, 128, 0.3);
+        }
+
+        .badge-role-owner {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .badge-role-editor {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .badge-role-viewer {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(107, 114, 128, 0.3);
+        }
+
+        .project-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #a8b2d1;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .metric-trend {
+            font-size: 0.7rem;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .trend-up {
+            color: #4ade80;
+        }
+
+        .trend-down {
+            color: #f87171;
+        }
+
+        .trend-neutral {
+            color: #a8b2d1;
+        }
+
+        .loading-skeleton {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .skeleton-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            height: 200px;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <script>
+        let currentUser = null;
+
+        // Check authentication on load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    // Load user profile picture if available
+                    loadUserProfilePicture(currentUser);
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Load projects
+        async function loadProjects() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/workspace/projects', {
+                    headers: headers,
+                    credentials: 'include' // Include cookies for session
+                });
+                
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return [];
+                }
+
+                const data = await response.json();
+                const projects_data = data.projects || [];
+                
+                const grid = document.getElementById('projects-grid');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (projects_data.length === 0) {
+                    grid.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return [];
+                }
+                
+                grid.innerHTML = '';
+                emptyState.style.display = 'none';
+                
+                projects = projects_data; // Store for later use
+                projects_data.forEach(project => {
+                    const card = createProjectCard(project);
+                    grid.appendChild(card);
+                });
+                
+                // Update "New Post" link with first project's client_id
+                if (projects.length > 0) {
+                    const newPostLink = document.getElementById('new-post-link');
+                    if (newPostLink) {
+                        newPostLink.href = `/content/create?client_id=${projects[0].client_id}`;
+                    }
+                }
+                
+                return projects_data;
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                document.getElementById('projects-grid').innerHTML = 
+                    '<p style="color: #f87171; text-align: center; padding: 2rem;">Error loading projects. Please try again.</p>';
+                return [];
+            }
+        }
+
+        function createProjectCard(project) {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            card.onclick = () => {
+                window.location.href = `/?client_id=${project.client_id}`;
+            };
+            
+            const statusClass = project.status === 'active' ? 'badge-status-active' : 'badge-status-inactive';
+            const roleClass = `badge-role-${project.user_role || 'viewer'}`;
+            const roleLabel = (project.user_role || 'viewer').charAt(0).toUpperCase() + (project.user_role || 'viewer').slice(1);
+            
+            const growthIcon = project.growth_trend === 'up' ? '↑' : project.growth_trend === 'down' ? '↓' : '→';
+            const growthClass = project.growth_trend === 'up' ? 'trend-up' : project.growth_trend === 'down' ? 'trend-down' : 'trend-neutral';
+            
+            card.innerHTML = `
+                <div class="project-header">
+                    <h3 class="project-name">${escapeHtml(project.name)}</h3>
+                    <div class="project-badges">
+                        <span class="badge ${statusClass}">${project.status}</span>
+                        <span class="badge ${roleClass}">${roleLabel}</span>
+                    </div>
+                </div>
+                <div class="project-metrics">
+                    <div class="metric-item">
+                        <div class="metric-label">Growth</div>
+                        <div class="metric-value">${project.growth > 0 ? '+' : ''}${project.growth.toFixed(1)}%</div>
+                        <div class="metric-trend ${growthClass}">${growthIcon}</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Followers</div>
+                        <div class="metric-value">${formatNumber(project.total_followers)}</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Revenue</div>
+                        <div class="metric-value">${formatCurrency(project.revenue)}</div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function formatCurrency(num) {
+            if (num >= 1000000) {
+                return '$' + (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return '$' + (num / 1000).toFixed(1) + 'K';
+            }
+            return '$' + num.toFixed(0);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        let projects = [];
+        
+        // Initialize
+        checkAuth().then(() => {
+            loadProjects();
+        });
+
+        // Initialize noise canvas (from dashboard)
+        const canvas = document.getElementById('noise-canvas');
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const noise = Math.random() * 10;
+                imageData.data[i] = noise;
+                imageData.data[i + 1] = noise;
+                imageData.data[i + 2] = noise;
+                imageData.data[i + 3] = 5;
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+        
+        // Load user profile picture
+        async function loadUserProfilePicture(user) {
+            if (!user) return;
+            const profilePicEl = document.getElementById('user-profile-pic');
+            if (!profilePicEl) return;
+            
+            // Try to get profile picture from user metadata or social links
+            // For now, use default image. User can provide their own image later.
+            // TODO: Fetch from social media profile if available
+            const defaultPic = '/web/assets/default-avatar.png';
+            profilePicEl.src = defaultPic;
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
+

@@ -484,18 +484,22 @@
     <main>
         <header class="app-header">
             <div class="brand-mark">
-                <div class="logo-glyph">☾</div>
+                <div class="logo-glyph">
+                    <img id="user-profile-pic" src="/web/assets/default-avatar.png" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(168, 85, 247, 0.3);" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
                 <div>
-                    <p class="pill-badge">Soul in Social</p>
+                    <p class="pill-badge" id="project-name">Loading...</p>
                     <h1 id="post-title">Loading...</h1>
                 </div>
             </div>
             <div class="nav-actions">
+                <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
                 <a href="/product" class="ghost-button">Product</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
             </div>
         </header>
 
@@ -506,6 +510,13 @@
 
     <script>
         const postId = window.location.pathname.split('/').pop();
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
         
         async function loadPost() {
             try {
@@ -525,6 +536,11 @@
                 console.log('Post has raw_idea:', !!post.raw_idea);
                 console.log('Post has center_post:', !!post.center_post);
                 console.log('Post status:', post.status);
+                
+                // Load client name for navigation
+                if (post.client_id) {
+                    loadClientName(post.client_id);
+                }
                 
                 if (!post) {
                     throw new Error('Post data is null or undefined');
@@ -585,7 +601,25 @@
                                 </div>
                             </div>
                         ` : `
-                            <p style="color: #a8b2d1;">Draft - not yet expanded</p>
+                            <div style="background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                                <p style="color: #f87171; margin: 0 0 0.5rem 0; font-weight: 500;">⚠️ Center post not created</p>
+                                ${post.error ? `
+                                    <p style="color: #a8b2d1; font-size: 0.9rem; margin: 0 0 0.5rem 0;">
+                                        ${post.error.includes('ANTHROPIC_API_KEY') ? '❌ AI API key not configured. Please set ANTHROPIC_API_KEY in your .env file.' : 
+                                          post.error.includes('401') || post.error.includes('authentication') ? '❌ Invalid API key. Please check your ANTHROPIC_API_KEY.' :
+                                          post.error.includes('404') || post.error.includes('not_found') ? '❌ AI model not found. Please check your ANTHROPIC_MODEL setting.' :
+                                          post.error.includes('JSON') || post.error.includes('parsing') ? '❌ AI returned invalid response format. This usually means the API response was malformed. Try again or check server logs.' :
+                                          '❌ AI expansion failed: ' + post.error.substring(0, 200)}
+                                    </p>
+                                    ${post.error.includes('JSON') || post.error.includes('parsing') ? `
+                                        <details style="margin-top: 0.5rem;">
+                                            <summary style="color: #a8b2d1; font-size: 0.85rem; cursor: pointer;">Show error details</summary>
+                                            <pre style="background: rgba(0, 0, 0, 0.3); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem; font-size: 0.8rem; color: #f87171; overflow-x: auto; max-height: 200px; overflow-y: auto;">${escapeHtml(post.error)}</pre>
+                                        </details>
+                                    ` : ''}
+                                ` : ''}
+                                <p style="color: #a8b2d1; font-size: 0.85rem; margin: 0;">Status: ${post.status || 'idea'}</p>
+                            </div>
                             <div class="action-buttons">
                                 <button class="glass-button" onclick="expandPost()">Expand with AI</button>
                             </div>
@@ -876,8 +910,50 @@
         }
         
         async function expandPost() {
-            // TODO: Implement expand endpoint
-            alert('Expand functionality coming soon');
+            if (!confirm('Expand this post with AI? This will generate the center post content.')) {
+                return;
+            }
+            
+            const button = event?.target || document.querySelector('button[onclick="expandPost()"]');
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Expanding...';
+            }
+            
+            try {
+                const response = await fetch(`/api/content/posts/${postId}/expand`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('access_token') || ''}`
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Post expanded successfully! Refreshing...');
+                    // Reload the post to show the new center_post
+                    await loadPost();
+                } else {
+                    // Reload the post first to show the error in the UI
+                    await loadPost();
+                    // Then show alert
+                    alert(`❌ Error: ${data.error || 'Failed to expand post'}\n\nCheck the error details below for more information.`);
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = 'Expand with AI';
+                    }
+                }
+            } catch (error) {
+                console.error('Expand error:', error);
+                alert(`❌ Error: ${error.message}`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Expand with AI';
+                }
+            }
         }
         
         // Edit functions
@@ -1249,6 +1325,91 @@
                 generateNoise();
             });
         })();
+
+        // Authentication functions
+        async function checkAuth() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'block';
+                    }
+                    // Load user profile picture if available
+                    loadUserProfilePicture(data.user);
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+        
+        // Load client name for navigation
+        async function loadClientName(clientId) {
+            if (!clientId) return;
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const client = data.clients?.find(c => c.client_id === clientId);
+                    const projectNameEl = document.getElementById('project-name');
+                    if (projectNameEl && client) {
+                        projectNameEl.textContent = client.name || 'Project';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading client name:', error);
+            }
+        }
+        
+        // Load user profile picture
+        async function loadUserProfilePicture(user) {
+            if (!user) return;
+            const profilePicEl = document.getElementById('user-profile-pic');
+            if (!profilePicEl) return;
+            
+            // Try to get profile picture from user metadata or social links
+            // For now, use default image. User can provide their own image later.
+            // TODO: Fetch from social media profile if available
+            const defaultPic = '/web/assets/default-avatar.png';
+            profilePicEl.src = defaultPic;
+        }
+
+        checkAuth();
     </script>
 </body>
 </html>

@@ -1,28 +1,283 @@
 """
 Flask web server for dashboard and content management
 """
-from flask import Flask, send_file, send_from_directory, request, jsonify, render_template_string
+from flask import Flask, send_file, send_from_directory, request, jsonify, render_template_string, redirect, url_for, session
+from functools import wraps
 import os
 import json
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up Flask with static files and templates
 app = Flask(__name__, 
             static_folder='web', 
             static_url_path='/web',
             template_folder='web/templates')
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Workspace metrics cache (in-memory, 5 minute TTL)
+_workspace_cache = {}
+_cache_lock = Lock()
+CACHE_TTL_SECONDS = 300  # 5 minutes
 
 # Content API routes - lazy imports to avoid crashing if ANTHROPIC_API_KEY is missing
 # These will be imported inside the route handlers when needed
 
+# ==================== AUTHENTICATION ====================
+
+def get_current_user():
+    """Get current authenticated user from Supabase Auth token"""
+    try:
+        from content.supabase_storage import get_supabase_client
+        client = get_supabase_client()
+        if not client:
+            # If Supabase not configured, allow access (backward compatibility)
+            return {'id': 'demo_user', 'email': 'demo@example.com', 'user_metadata': {}}
+        
+        # Get auth token from header or session
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        else:
+            token = session.get('access_token')
+        
+        if not token:
+            return None
+        
+        # Verify token with Supabase
+        try:
+            # Get user with JWT token
+            user_response = client.auth.get_user(jwt=token)
+            if user_response and user_response.user:
+                return {
+                    'id': user_response.user.id,
+                    'email': user_response.user.email,
+                    'user_metadata': user_response.user.user_metadata or {}
+                }
+        except Exception as e:
+            print(f"⚠️ Error verifying token: {e}")
+            # If token verification fails, return None (require re-auth)
+            return None
+    except Exception as e:
+        print(f"⚠️ Error getting current user: {e}")
+        # If Supabase not available, allow access for backward compatibility
+        return {'id': 'demo_user', 'email': 'demo@example.com', 'user_metadata': {}}
+    
+    return None
+
+def require_auth(f):
+    """Decorator to require authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = get_current_user()
+        # Allow demo user for backward compatibility if Supabase not configured
+        if not user or (user.get('id') == 'demo_user' and request.path.startswith('/api/workspace')):
+            # For workspace API, require real auth
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "Authentication required"}), 401
+            else:
+                return redirect('/login')
+        request.current_user = user
+        return f(*args, **kwargs)
+    return decorated_function
+
+def optional_auth(f):
+    """Decorator that gets user if available but doesn't require it"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = get_current_user()
+        request.current_user = user
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Authentication routes
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """Login with email/password using Supabase Auth"""
+    try:
+        from content.supabase_storage import get_supabase_client
+        client = get_supabase_client()
+        if not client:
+            return jsonify({"error": "Supabase not configured"}), 500
+        
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        # Sign in with Supabase Auth
+        auth_response = client.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        
+        if auth_response.user and auth_response.session:
+            # Store session
+            session['access_token'] = auth_response.session.access_token
+            session['user_id'] = auth_response.user.id
+            session['user_email'] = auth_response.user.email
+            
+            return jsonify({
+                "user": {
+                    "id": auth_response.user.id,
+                    "email": auth_response.user.email,
+                    "user_metadata": auth_response.user.user_metadata or {}
+                },
+                "access_token": auth_response.session.access_token
+            })
+        else:
+            return jsonify({"error": "Invalid credentials"}), 401
+    except Exception as e:
+        print(f"⚠️ Login error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/auth/register', methods=['POST'])
+def api_register():
+    """Register new user with Supabase Auth"""
+    try:
+        from content.supabase_storage import get_supabase_client
+        client = get_supabase_client()
+        if not client:
+            return jsonify({"error": "Supabase not configured"}), 500
+        
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        name = data.get('name', '')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        # Sign up with Supabase Auth
+        auth_response = client.auth.sign_up({
+            "email": email,
+            "password": password,
+            "options": {
+                "data": {
+                    "name": name
+                }
+            }
+        })
+        
+        if auth_response.user:
+            # Auto-login after registration
+            session['access_token'] = auth_response.session.access_token if auth_response.session else None
+            session['user_id'] = auth_response.user.id
+            session['user_email'] = auth_response.user.email
+            
+            return jsonify({
+                "user": {
+                    "id": auth_response.user.id,
+                    "email": auth_response.user.email,
+                    "user_metadata": auth_response.user.user_metadata or {}
+                },
+                "access_token": auth_response.session.access_token if auth_response.session else None
+            }), 201
+        else:
+            return jsonify({"error": "Registration failed"}), 400
+    except Exception as e:
+        print(f"⚠️ Registration error: {e}")
+        import traceback
+        traceback.print_exc()
+        error_msg = str(e)
+        if "already registered" in error_msg.lower() or "already exists" in error_msg.lower():
+            return jsonify({"error": "Email already registered"}), 409
+        return jsonify({"error": error_msg}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def api_logout():
+    """Logout current user"""
+    try:
+        from content.supabase_storage import get_supabase_client
+        client = get_supabase_client()
+        
+        # Clear session
+        session.clear()
+        
+        # Sign out from Supabase
+        if client:
+            try:
+                token = session.get('access_token')
+                if token:
+                    client.auth.sign_out()
+            except:
+                pass
+        
+        return jsonify({"message": "Logged out successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/auth/me', methods=['GET'])
+@require_auth
+def api_get_current_user():
+    """Get current authenticated user"""
+    user = get_current_user()
+    if user:
+        return jsonify({"user": user})
+    return jsonify({"error": "Not authenticated"}), 401
+
+@app.route('/login')
+def login_page():
+    """Serve login page"""
+    try:
+        return send_file('web/templates/login.html')
+    except FileNotFoundError:
+        return "Login page not found", 404
+
+@app.route('/signup')
+def signup_page():
+    """Serve signup page"""
+    try:
+        return send_file('web/templates/signup.html')
+    except FileNotFoundError:
+        return "Signup page not found", 404
+
 @app.route('/')
+@optional_auth
 def index():
-    """Serve dashboard_sample.html as homepage"""
+    """Serve dashboard_sample.html as homepage, or redirect to workspace"""
+    client_id = request.args.get('client_id')
+    user = getattr(request, 'current_user', None)
+    
+    # If no client_id and user is authenticated, redirect to workspace
+    if not client_id and user:
+        return redirect('/workspace')
+    
+    # If no client_id and no user, redirect to login
+    if not client_id and not user:
+        return redirect('/login')
+    
+    # If client_id provided, verify access
+    if client_id and user:
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            # User doesn't have access, redirect to workspace
+            return redirect('/workspace')
+    
     try:
         return send_file('dashboard_sample.html')
     except FileNotFoundError:
         return "Error: dashboard_sample.html not found", 404
+
+@app.route('/workspace')
+@require_auth
+def workspace():
+    """Workspace overview page showing all projects"""
+    try:
+        return send_file('web/templates/workspace.html')
+    except FileNotFoundError:
+        return "Workspace page not found", 404
 
 # Content Management Routes
 @app.route('/api/content/posts', methods=['GET'])
@@ -35,14 +290,40 @@ def api_list_posts():
     return jsonify({"posts": posts})
 
 @app.route('/api/content/posts', methods=['POST'])
+@require_auth
 def api_create_post():
     """Create a new center post"""
     from content.center_post import create_center_post
+    from content.supabase_storage import get_user_accessible_clients
+    
     data = request.json
+    user = getattr(request, 'current_user', None)
+    
+    # Get client_id from request or user's accessible clients
+    client_id = data.get('client_id')
+    
+    # If no client_id provided, use user's first accessible client
+    if not client_id and user:
+        accessible_clients = get_user_accessible_clients(user['id'])
+        if accessible_clients:
+            client_id = accessible_clients[0]
+        else:
+            return jsonify({"error": "No accessible projects found. Please contact an administrator."}), 403
+    
+    if not client_id:
+        return jsonify({"error": "client_id is required"}), 400
+    
+    # Verify user has access to this client
+    if user:
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+    
     try:
-        print(f"Creating post for client: {data.get('client_id')}, idea: {data.get('raw_idea', '')[:50]}...")
+        print(f"Creating post for client: {client_id}, idea: {data.get('raw_idea', '')[:50]}...")
         post = create_center_post(
-            client_id=data.get('client_id'),
+            client_id=client_id,
             raw_idea=data.get('raw_idea', ''),
             auto_expand=data.get('auto_expand', True),
             pillar_id=data.get('pillar_id'),
@@ -91,6 +372,136 @@ def api_update_post(post_id):
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/content/posts/<post_id>/expand', methods=['POST'])
+@require_auth
+def api_expand_post(post_id):
+    """Expand an existing post's raw_idea into center_post using AI"""
+    from content.center_post import get_post, update_post, load_content_posts, save_content_posts
+    from content.ai_client import ClaudeClient
+    from content.supabase_storage import get_user_client_role
+    
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Get the post
+        post = get_post(post_id)
+        if not post:
+            return jsonify({"error": "Post not found"}), 404
+        
+        # Verify user has access to this post's client
+        client_id = post.get('client_id')
+        if client_id and user:
+            from content.supabase_storage import get_user_client_role
+            role = get_user_client_role(user['id'], client_id)
+            if not role:
+                return jsonify({"error": "Access denied to this post"}), 403
+        
+        # Check if post already has center_post
+        if post.get('center_post'):
+            return jsonify({"error": "Post already has center_post. Use regenerate instead."}), 400
+        
+        # Get raw_idea
+        raw_idea = post.get('raw_idea')
+        if not raw_idea:
+            return jsonify({"error": "Post has no raw_idea to expand"}), 400
+        
+        # Load client config (try Supabase first, then JSON file)
+        client = None
+        try:
+            from content.supabase_storage import load_clients_from_supabase
+            clients = load_clients_from_supabase()
+            for c in clients:
+                if c.get('client_id') == client_id:
+                    client = c
+                    break
+        except Exception as e:
+            print(f"⚠️ Could not load clients from Supabase: {e}")
+        
+        if not client:
+            # Fallback to JSON file
+            try:
+                with open('clients.json', 'r') as f:
+                    clients_data = json.load(f)
+                for c in clients_data.get('clients', []):
+                    if c.get('client_id') == client_id:
+                        client = c
+                        break
+            except FileNotFoundError:
+                pass
+        
+        if not client:
+            client = {
+                'client_id': client_id,
+                'brand': {}
+            }
+        
+        # Expand with AI
+        print(f"[API] Expanding post {post_id} with AI...")
+        try:
+            ai_client = ClaudeClient()
+            
+            # Get CTA info if post has include_cta flag
+            cta_info = None
+            if post.get('include_cta'):
+                main_product = client.get('brand', {}).get('main_product', {})
+                if main_product.get('cta_text') and main_product.get('cta_url'):
+                    cta_info = {
+                        'text': main_product['cta_text'],
+                        'url': main_product['cta_url']
+                    }
+            
+            expanded = ai_client.expand_idea(raw_idea, client, cta_info=cta_info)
+            
+            # Calculate word count
+            word_count = len(expanded.get('content', '').split())
+            
+            # Update post with center_post
+            center_post_data = {
+                "title": expanded.get('title', ''),
+                "content": expanded.get('content', ''),
+                "word_count": expanded.get('word_count', word_count),
+                "checks": expanded.get('checks', {})
+            }
+            
+            # Update post
+            updates = {
+                'center_post': center_post_data,
+                'status': 'drafted',  # Change status from 'idea' to 'drafted'
+                'error': None  # Clear any previous errors
+            }
+            
+            updated_post = update_post(post_id, updates)
+            
+            print(f"✅ Post {post_id} expanded successfully")
+            return jsonify(updated_post)
+        except Exception as ai_error:
+            # Save error to post but don't fail the request
+            error_msg = str(ai_error)
+            print(f"⚠️ AI expansion failed for post {post_id}: {error_msg}")
+            
+            # Update post with error
+            updates = {
+                'error': error_msg,
+                'status': 'idea'  # Keep as idea since expansion failed
+            }
+            updated_post = update_post(post_id, updates)
+            
+            # Return error response
+            return jsonify({
+                "error": f"AI expansion failed: {error_msg}",
+                "post": updated_post
+            }), 500
+        
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        print(f"❌ Error expanding post: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/content/posts/<post_id>/branch', methods=['POST'])
@@ -394,15 +805,39 @@ def content_detail_page(post_id):
     return send_file('web/templates/content_detail.html')
 
 @app.route('/api/clients', methods=['GET'])
+@require_auth
 def api_list_clients():
-    """List all clients"""
+    """List all clients accessible by current user"""
     try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Try Supabase first
+        from content.supabase_storage import load_clients_from_supabase
+        supabase_clients = load_clients_from_supabase(user_id=user['id'])
+        
+        if supabase_clients:
+            return jsonify({"clients": supabase_clients})
+        
+        # Fallback to clients.json (for backward compatibility)
         try:
             with open('clients.json', 'r') as f:
                 data = json.load(f)
+            clients = data.get('clients', [])
+            # If no clients found, return dummy client
+            if not clients:
+                print("⚠️ No clients found, returning dummy client")
+                return jsonify({
+                    "clients": [{
+                        "client_id": "client_e7d73194",
+                        "name": "Demo Client",
+                        "status": "active"
+                    }]
+                })
+            return jsonify({"clients": clients})
         except FileNotFoundError:
             print("⚠️ clients.json not found, returning dummy client")
-            # Return a dummy client so dashboard can still load
             return jsonify({
                 "clients": [{
                     "client_id": "client_e7d73194",
@@ -410,18 +845,197 @@ def api_list_clients():
                     "status": "active"
                 }]
             })
-        clients = data.get('clients', [])
-        # If no clients found, return dummy client
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+def _fetch_client_metrics(client_id, base_url, scheme):
+    """Fetch all metrics for a single client in parallel"""
+    project = {
+        "client_id": client_id,
+        "growth": 0,
+        "total_followers": 0,
+        "revenue": 0,
+        "growth_trend": "neutral"
+    }
+    
+    def fetch_growth():
+        try:
+            response = requests.get(
+                f"{scheme}://{base_url}/api/dashboard/growth",
+                params={"client_id": client_id},
+                timeout=5
+            )
+            if response.status_code == 200:
+                data = response.json()
+                earnings = data.get('earnings', [])
+                followers = data.get('followers', [])
+                
+                if len(earnings) >= 2:
+                    current = earnings[-1]
+                    previous = earnings[-2]
+                    if previous > 0:
+                        growth = round(((current - previous) / previous) * 100, 1)
+                        project["growth"] = growth
+                        project["growth_trend"] = "up" if growth > 0 else "down" if growth < 0 else "neutral"
+                
+                if followers:
+                    project["total_followers"] = followers[-1] if followers else 0
+        except Exception as e:
+            print(f"⚠️ Error fetching growth for {client_id}: {e}")
+    
+    def fetch_socials():
+        try:
+            response = requests.get(
+                f"{scheme}://{base_url}/api/dashboard/socials",
+                params={"client_id": client_id},
+                timeout=5
+            )
+            if response.status_code == 200:
+                data = response.json()
+                profiles = data.get('profiles', [])
+                total = sum(p.get('followers_count', 0) for p in profiles)
+                if total > 0:
+                    project["total_followers"] = total
+        except Exception as e:
+            print(f"⚠️ Error fetching socials for {client_id}: {e}")
+    
+    def fetch_products():
+        try:
+            response = requests.get(
+                f"{scheme}://{base_url}/api/dashboard/products",
+                params={"client_id": client_id},
+                timeout=5
+            )
+            if response.status_code == 200:
+                data = response.json()
+                products = data.get('products', [])
+                revenue = sum(p.get('monthly_revenue', 0) for p in products)
+                if revenue > 0:
+                    project["revenue"] = revenue
+        except Exception as e:
+            print(f"⚠️ Error fetching products for {client_id}: {e}")
+    
+    # Execute all three requests in parallel
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [
+            executor.submit(fetch_growth),
+            executor.submit(fetch_socials),
+            executor.submit(fetch_products)
+        ]
+        # Wait for all to complete
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"⚠️ Error in parallel fetch: {e}")
+    
+    return project
+
+@app.route('/api/workspace/projects', methods=['GET'])
+@require_auth
+def api_get_workspace_projects():
+    """Get all projects accessible by current user with aggregated metrics (cached, parallelized)"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        user_id = user['id']
+        cache_key = f"workspace_projects_{user_id}"
+        
+        # Check cache
+        with _cache_lock:
+            if cache_key in _workspace_cache:
+                cached_data, cached_time = _workspace_cache[cache_key]
+                if datetime.now() - cached_time < timedelta(seconds=CACHE_TTL_SECONDS):
+                    return jsonify(cached_data)
+        
+        # Get accessible clients
+        from content.supabase_storage import load_clients_from_supabase
+        clients = load_clients_from_supabase(user_id=user_id)
+        
         if not clients:
-            print("⚠️ No clients found, returning dummy client")
-            return jsonify({
-                "clients": [{
-                    "client_id": "client_e7d73194",
-                    "name": "Demo Client",
-                    "status": "active"
-                }]
-            })
-        return jsonify({"clients": clients})
+            result = {"projects": []}
+            with _cache_lock:
+                _workspace_cache[cache_key] = (result, datetime.now())
+            return jsonify(result)
+        
+        base_url = request.host
+        scheme = request.scheme
+        
+        # Fetch metrics for all clients in parallel
+        projects = []
+        with ThreadPoolExecutor(max_workers=min(10, len(clients))) as executor:
+            future_to_client = {
+                executor.submit(_fetch_client_metrics, client.get('client_id'), base_url, scheme): client
+                for client in clients
+                if client.get('client_id')
+            }
+            
+            for future in as_completed(future_to_client):
+                client = future_to_client[future]
+                try:
+                    metrics = future.result()
+                    project = {
+                        "client_id": client.get('client_id'),
+                        "name": client.get('name', 'Unnamed Project'),
+                        "status": client.get('status', 'active'),
+                        "user_role": client.get('user_role', 'viewer'),
+                        **metrics
+                    }
+                    projects.append(project)
+                except Exception as e:
+                    print(f"⚠️ Error processing client {client.get('client_id')}: {e}")
+                    # Add project with default values even if metrics fail
+                    projects.append({
+                        "client_id": client.get('client_id'),
+                        "name": client.get('name', 'Unnamed Project'),
+                        "status": client.get('status', 'active'),
+                        "user_role": client.get('user_role', 'viewer'),
+                        "growth": 0,
+                        "total_followers": 0,
+                        "revenue": 0,
+                        "growth_trend": "neutral"
+                    })
+        
+        result = {"projects": projects}
+        
+        # Cache the result
+        with _cache_lock:
+            _workspace_cache[cache_key] = (result, datetime.now())
+            # Clean up old cache entries (keep last 100)
+            if len(_workspace_cache) > 100:
+                # Remove oldest entries
+                sorted_cache = sorted(_workspace_cache.items(), key=lambda x: x[1][1])
+                for key, _ in sorted_cache[:-100]:
+                    del _workspace_cache[key]
+        
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/workspace/cache/clear', methods=['POST'])
+@require_auth
+def api_clear_workspace_cache():
+    """Clear workspace cache for current user (admin/debug endpoint)"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        user_id = user['id']
+        cache_key = f"workspace_projects_{user_id}"
+        
+        with _cache_lock:
+            if cache_key in _workspace_cache:
+                del _workspace_cache[cache_key]
+                return jsonify({"message": "Cache cleared", "user_id": user_id})
+            else:
+                return jsonify({"message": "No cache found", "user_id": user_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -687,7 +1301,7 @@ def api_get_products():
                 'name': main_product.get('cta_text', 'Main Product') or 'Main Product',
                 'monthly_sales': 12,  # Dummy data for testing
                 'monthly_buyers': 8,  # Dummy data for testing
-                'revenue': 9600  # Dummy data: 8 buyers × $1,200 average
+                'monthly_revenue': 9600  # Dummy data: 8 buyers × $1,200 average
             })
         else:
             # If no product configured, show dummy data for testing
@@ -696,14 +1310,14 @@ def api_get_products():
                 'name': 'Coaching Program',
                 'monthly_sales': 15,
                 'monthly_buyers': 12,
-                'revenue': 14400
+                'monthly_revenue': 14400
             })
             products.append({
                 'product_id': 'product_dummy_002',
                 'name': 'Discovery Call',
                 'monthly_sales': 8,
                 'monthly_buyers': 8,
-                'revenue': 0  # Free product
+                'monthly_revenue': 0  # Free product
             })
         
         return jsonify({'products': products})

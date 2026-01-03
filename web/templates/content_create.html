@@ -82,29 +82,28 @@
     <main>
         <header class="app-header">
             <div class="brand-mark">
-                <div class="logo-glyph">☾</div>
+                <div class="logo-glyph">
+                    <img id="user-profile-pic" src="/web/assets/default-avatar.png" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(168, 85, 247, 0.3);" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
                 <div>
-                    <p class="pill-badge">Soul in Social</p>
+                    <p class="pill-badge" id="project-name">Project</p>
                     <h1>Create New Post</h1>
                 </div>
             </div>
             <div class="nav-actions">
+                <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
                 <a href="/product" class="ghost-button">Product</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
             </div>
         </header>
 
         <section class="glass-card">
             <form id="create-post-form">
-                <div class="form-group">
-                    <label for="client_id">Client</label>
-                    <select id="client_id" name="client_id" required>
-                        <option value="">Select client...</option>
-                    </select>
-                </div>
+                <input type="hidden" id="client_id" name="client_id">
                 
                 <div class="form-group">
                     <label for="raw_idea">Raw Idea</label>
@@ -151,25 +150,52 @@
     </main>
 
     <script>
-        // Load clients and pillars
-        async function loadClients() {
+        let currentClientId = null;
+        
+        // Get client_id from URL query parameter or user's accessible clients
+        async function determineClientId() {
+            // First, check URL query parameter (from workspace)
+            const urlParams = new URLSearchParams(window.location.search);
+            const clientIdFromUrl = urlParams.get('client_id');
+            
+            if (clientIdFromUrl) {
+                currentClientId = clientIdFromUrl;
+                document.getElementById('client_id').value = clientIdFromUrl;
+                loadPillars();
+                return;
+            }
+            
+            // Otherwise, get the first accessible client for the user
             try {
-                const response = await fetch('/api/clients');
-                const data = await response.json();
-                const select = document.getElementById('client_id');
-                data.clients.forEach((client, index) => {
-                    const option = document.createElement('option');
-                    option.value = client.client_id;
-                    option.textContent = client.name;
-                    select.appendChild(option);
-                    // Auto-select first client
-                    if (index === 0) {
-                        select.value = client.client_id;
-                        loadPillars(); // Load pillars for the auto-selected client
-                    }
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
                 });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const clients = data.clients || [];
+                    if (clients.length > 0) {
+                        // Use the first accessible client
+                        currentClientId = clients[0].client_id;
+                        document.getElementById('client_id').value = currentClientId;
+                        loadPillars();
+                    } else {
+                        console.error('No clients accessible');
+                        document.getElementById('status-message').innerHTML = 
+                            '<p style="color: #f87171;">No projects accessible. Please contact an administrator.</p>';
+                    }
+                } else {
+                    console.error('Error loading clients:', response.status);
+                }
             } catch (error) {
-                console.error('Error loading clients:', error);
+                console.error('Error determining client:', error);
             }
         }
         
@@ -192,8 +218,6 @@
                 console.error('Error loading pillars:', error);
             }
         }
-        
-        document.getElementById('client_id').addEventListener('change', loadPillars);
         
         // Form submission
         document.getElementById('create-post-form').addEventListener('submit', async (e) => {
@@ -254,7 +278,8 @@
             }
         });
         
-        loadClients();
+        // Determine client_id on page load
+        determineClientId();
         
         // Noise canvas
         (function() {
@@ -284,6 +309,124 @@
                 generateNoise();
             });
         })();
+
+        // Authentication functions
+        async function checkAuth() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'block';
+                    }
+                    // Load user profile picture if available
+                    loadUserProfilePicture(data.user);
+                    // Load client name if available
+                    if (currentClientId) {
+                        loadClientName(currentClientId);
+                    } else {
+                        loadFirstClientName();
+                    }
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Load client name for navigation
+        async function loadClientName(clientId) {
+            if (!clientId) return;
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const client = data.clients?.find(c => c.client_id === clientId);
+                    const projectNameEl = document.getElementById('project-name');
+                    if (projectNameEl && client) {
+                        projectNameEl.textContent = client.name || 'Project';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading client name:', error);
+            }
+        }
+        
+        // Load first client name for navigation
+        async function loadFirstClientName() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const client = data.clients?.[0];
+                    const projectNameEl = document.getElementById('project-name');
+                    if (projectNameEl && client) {
+                        projectNameEl.textContent = client.name || 'Project';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading client name:', error);
+            }
+        }
+        
+        // Load user profile picture
+        async function loadUserProfilePicture(user) {
+            if (!user) return;
+            const profilePicEl = document.getElementById('user-profile-pic');
+            if (!profilePicEl) return;
+            
+            // Try to get profile picture from user metadata or social links
+            // For now, use default image. User can provide their own image later.
+            // TODO: Fetch from social media profile if available
+            const defaultPic = '/web/assets/default-avatar.png';
+            profilePicEl.src = defaultPic;
+        }
+
+        checkAuth();
     </script>
 </body>
 </html>

@@ -42,7 +42,9 @@ class ClaudeClient:
             )
         
         self.client = Anthropic(api_key=api_key)
-        # Allow model to be configured via environment variable, default to Claude Sonnet 4
+        # Allow model to be configured via environment variable
+        # Default to claude-sonnet-4-20250514 (current recommended model)
+        # Other valid models: claude-opus-4-20250514, claude-3-7-sonnet-20250219, claude-3-5-haiku-20241022
         self.model = os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514')
     
     def expand_idea(self, raw_idea, client_config, cta_info=None):
@@ -112,7 +114,9 @@ Check alignment with:
 - Identity: Does this reflect brand identity?
 - Novelty: Does this bring fresh perspective?
 
-Return JSON format:
+CRITICAL: You MUST return ONLY valid JSON. Do not include any markdown, explanations, or text outside the JSON object.
+
+Return JSON format (no markdown, no code blocks, just the raw JSON):
 {{
   "content": "full expanded content here...",
   "title": "compelling title",
@@ -125,39 +129,151 @@ Return JSON format:
     "novelty": true/false
   }},
   "word_count": 1200
-}}"""
+}}
+
+Remember: Return ONLY the JSON object, nothing else."""
         
         try:
             print(f"[ClaudeClient] Calling Claude API with model: {self.model}")
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=4000,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
-            )
-            print(f"[ClaudeClient] API response received, length: {len(message.content[0].text) if message.content else 0}")
+            print(f"[ClaudeClient] Prompt length: {len(prompt)} characters")
             
-            # Extract JSON from response
-            response_text = message.content[0].text
-            print(f"[ClaudeClient] Response text preview: {response_text[:200]}...")
+            try:
+                message = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=4000,
+                    messages=[{
+                        "role": "user",
+                        "content": prompt
+                    }]
+                )
+            except Exception as api_err:
+                error_str = str(api_err)
+                if "model" in error_str.lower() and ("not found" in error_str.lower() or "404" in error_str):
+                    raise Exception(
+                        f"Model '{self.model}' not found or not available.\n"
+                        f"Valid models include: claude-sonnet-4-20250514, claude-opus-4-20250514, claude-3-7-sonnet-20250219, claude-3-5-haiku-20241022\n"
+                        f"Set ANTHROPIC_MODEL in your .env file to use a different model.\n"
+                        f"Error: {error_str}"
+                    )
+                raise
             
-            # Try to parse JSON (might be wrapped in markdown code blocks)
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                response_text = response_text[json_start:json_end].strip()
-            elif "```" in response_text:
-                json_start = response_text.find("```") + 3
-                json_end = response_text.find("```", json_start)
-                response_text = response_text[json_start:json_end].strip()
+            # Check for stop reason
+            if hasattr(message, 'stop_reason') and message.stop_reason:
+                print(f"[ClaudeClient] Stop reason: {message.stop_reason}")
+                if message.stop_reason == 'max_tokens':
+                    print("[ClaudeClient] ⚠️ Response was truncated due to max_tokens limit")
+                elif message.stop_reason == 'content_filter':
+                    print("[ClaudeClient] ⚠️ Response was filtered by content policy")
+                    raise Exception("Claude API filtered the response due to content policy. Please adjust your prompt.")
+            # Check if response has content
+            if not message.content or len(message.content) == 0:
+                raise Exception("Claude API returned empty response. This might indicate an API issue. Please check your ANTHROPIC_API_KEY and try again.")
             
-            result = json.loads(response_text)
-            print(f"[ClaudeClient] Successfully parsed JSON. Title: {result.get('title', 'N/A')[:50]}...")
-            return result
-        except json.JSONDecodeError as e:
-            raise Exception(f"Error parsing Claude response as JSON: {str(e)}")
+            # Get response text - handle different response formats
+            if hasattr(message.content[0], 'text'):
+                response_text = message.content[0].text
+            elif isinstance(message.content[0], dict) and 'text' in message.content[0]:
+                response_text = message.content[0]['text']
+            elif isinstance(message.content[0], str):
+                response_text = message.content[0]
+            else:
+                raise Exception(f"Unexpected response format from Claude API. Content type: {type(message.content[0])}")
+            
+            print(f"[ClaudeClient] API response received, length: {len(response_text) if response_text else 0}")
+            if response_text:
+                print(f"[ClaudeClient] Response text preview: {response_text[:500]}...")
+            else:
+                print(f"[ClaudeClient] ⚠️ Response text is None or empty")
+            
+            if not response_text or len(response_text.strip()) == 0:
+                raise Exception(
+                    "Claude API returned empty response text.\n"
+                    "This could mean:\n"
+                    "1. The API call was interrupted\n"
+                    "2. The model hit a safety filter\n"
+                    "3. There's an issue with the API key\n"
+                    "Please check the server logs and try again."
+                )
+            
+            # Try to extract JSON from response (might be wrapped in markdown code blocks)
+            original_text = response_text
+            json_text = response_text.strip()
+            
+            # Remove markdown code blocks if present
+            if "```json" in json_text:
+                json_start = json_text.find("```json") + 7
+                json_end = json_text.find("```", json_start)
+                if json_end == -1:
+                    json_end = len(json_text)
+                json_text = json_text[json_start:json_end].strip()
+            elif "```" in json_text:
+                json_start = json_text.find("```") + 3
+                json_end = json_text.find("```", json_start)
+                if json_end == -1:
+                    json_end = len(json_text)
+                json_text = json_text[json_start:json_end].strip()
+            
+            # Try to find JSON object in the text (look for { ... })
+            if not json_text.startswith('{'):
+                # Try to find the first { and last }
+                first_brace = json_text.find('{')
+                last_brace = json_text.rfind('}')
+                if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                    json_text = json_text[first_brace:last_brace + 1]
+            
+            # Validate we have something to parse
+            if not json_text or len(json_text.strip()) == 0:
+                # Log the full response for debugging
+                print(f"[ClaudeClient] ❌ Empty JSON text after extraction")
+                print(f"[ClaudeClient] Original response (first 1000 chars): {original_text[:1000]}")
+                print(f"[ClaudeClient] Original response length: {len(original_text)}")
+                raise Exception(
+                    f"Could not extract JSON from Claude response.\n"
+                    f"Response was empty or contained no JSON.\n"
+                    f"Response preview (first 500 chars): {original_text[:500]}\n"
+                    f"Full response length: {len(original_text)} characters\n"
+                    f"This might mean:\n"
+                    f"1. Claude returned an error message instead of JSON\n"
+                    f"2. The response was filtered or blocked\n"
+                    f"3. The API call was interrupted\n"
+                    f"Please check server logs for full response details."
+                )
+            
+            try:
+                result = json.loads(json_text)
+                print(f"[ClaudeClient] Successfully parsed JSON. Title: {result.get('title', 'N/A')[:50]}...")
+                return result
+            except json.JSONDecodeError as json_err:
+                # Try to extract JSON more aggressively
+                import re
+                # Look for JSON object pattern (more robust regex)
+                json_match = re.search(r'\{.*\}', json_text, re.DOTALL)
+                if json_match:
+                    try:
+                        extracted_json = json_match.group(0)
+                        result = json.loads(extracted_json)
+                        print(f"[ClaudeClient] Successfully parsed JSON using regex extraction. Title: {result.get('title', 'N/A')[:50]}...")
+                        return result
+                    except Exception as regex_err:
+                        print(f"[ClaudeClient] Regex extraction also failed: {regex_err}")
+                
+                # Save the actual response for debugging
+                error_details = f"Error parsing Claude response as JSON: {str(json_err)}\n\n"
+                error_details += f"Response received (first 1000 chars):\n{original_text[:1000]}\n\n"
+                error_details += f"JSON extraction attempted (first 500 chars):\n{json_text[:500]}\n\n"
+                error_details += f"This usually means:\n"
+                error_details += f"1. Claude returned text instead of JSON\n"
+                error_details += f"2. The response was truncated or incomplete\n"
+                error_details += f"3. The prompt needs adjustment\n\n"
+                error_details += f"Full response length: {len(original_text)} characters"
+                
+                print(f"[ClaudeClient] ❌ JSON Parse Error:")
+                print(f"   Error: {str(json_err)}")
+                print(f"   Response length: {len(original_text)}")
+                print(f"   Response preview: {original_text[:500]}")
+                print(f"   JSON text attempted: {json_text[:500]}")
+                
+                raise Exception(error_details)
         except Exception as e:
             error_str = str(e)
             # Check for authentication errors

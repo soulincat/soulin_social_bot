@@ -201,18 +201,22 @@
     <main>
         <header class="app-header">
             <div class="brand-mark">
-                <div class="logo-glyph">☾</div>
+                <div class="logo-glyph">
+                    <img id="user-profile-pic" src="/web/assets/default-avatar.png" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(168, 85, 247, 0.3);" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
                 <div>
-                    <p class="pill-badge">Soul in Social</p>
+                    <p class="pill-badge" id="project-name">Project</p>
                     <h1>Brand Settings</h1>
                 </div>
             </div>
             <div class="nav-actions">
+                <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
                 <a href="/product" class="ghost-button">Product</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
             </div>
         </header>
 
@@ -895,6 +899,92 @@
                 generateNoise();
             });
         })();
+
+        // Authentication functions
+        async function checkAuth() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'block';
+                    }
+                    // Load user profile picture if available
+                    loadUserProfilePicture(data.user);
+                    // Load first client name if available
+                    loadFirstClientName();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+        
+        // Load first client name for navigation
+        async function loadFirstClientName() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const client = data.clients?.[0];
+                    const projectNameEl = document.getElementById('project-name');
+                    if (projectNameEl && client) {
+                        projectNameEl.textContent = client.name || 'Project';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading client name:', error);
+            }
+        }
+        
+        // Load user profile picture
+        async function loadUserProfilePicture(user) {
+            if (!user) return;
+            const profilePicEl = document.getElementById('user-profile-pic');
+            if (!profilePicEl) return;
+            
+            // Try to get profile picture from user metadata or social links
+            // For now, use default image. User can provide their own image later.
+            // TODO: Fetch from social media profile if available
+            const defaultPic = '/web/assets/default-avatar.png';
+            profilePicEl.src = defaultPic;
+        }
+
+        checkAuth();
     </script>
 </body>
 </html>

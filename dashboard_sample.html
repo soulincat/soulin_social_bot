@@ -24,11 +24,14 @@
                 </div>
             </div>
             <div class="nav-actions">
+                <span id="user-email" style="color: #a8b2d1; margin-right: 1rem; font-size: 0.9rem;"></span>
+                <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
                 <a href="/product" class="ghost-button">Product</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
             </div>
         </header>
 
@@ -1461,6 +1464,59 @@
             }
             return num.toString();
         }
+
+        // Authentication functions
+        async function checkAuth() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const userEmail = document.getElementById('user-email');
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (userEmail) {
+                        userEmail.textContent = data.user?.email || '';
+                    }
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'block';
+                    }
+                } else {
+                    // If not authenticated and no client_id, redirect to workspace
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (!urlParams.get('client_id')) {
+                        window.location.href = '/workspace';
+                    }
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Check auth on page load
+        checkAuth();
     </script>
 </body>
 </html>

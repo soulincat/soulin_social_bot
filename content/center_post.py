@@ -13,8 +13,20 @@ CONTENT_POSTS_FILE = 'content_posts.json'
 _in_memory_posts = {}
 
 def load_content_posts():
-    """Load all content posts from KV, file, or memory cache"""
-    # Try KV first (for Vercel)
+    """Load all content posts from Supabase, KV, file, or memory cache"""
+    # Try Supabase first (recommended)
+    try:
+        from .supabase_storage import load_posts_from_supabase
+        supabase_data = load_posts_from_supabase()
+        if supabase_data and supabase_data.get('posts'):
+            # Merge with in-memory cache (in-memory takes precedence for current session)
+            all_posts = {post['id']: post for post in supabase_data.get('posts', [])}
+            all_posts.update(_in_memory_posts)
+            return {"posts": list(all_posts.values())}
+    except Exception as e:
+        print(f"⚠️ Supabase not available: {e}")
+    
+    # Fallback to KV (for Vercel without Supabase)
     try:
         from .storage import load_posts
         kv_data = load_posts()
@@ -26,7 +38,7 @@ def load_content_posts():
     except Exception as e:
         print(f"⚠️ KV not available: {e}")
     
-    # Fallback to file
+    # Fallback to file (for local development)
     file_posts = []
     if os.path.exists(CONTENT_POSTS_FILE):
         try:
@@ -43,36 +55,48 @@ def load_content_posts():
     return {"posts": list(all_posts.values())}
 
 def save_content_posts(data):
-    """Save content posts to KV, file, or memory cache"""
+    """Save content posts to Supabase, KV, file, or memory cache"""
     # Update in-memory cache (for current session)
     global _in_memory_posts
-    for post in data.get('posts', []):
+    posts = data.get('posts', [])
+    for post in posts:
         _in_memory_posts[post['id']] = post
     
-    # Try KV first (for Vercel) - this is the only way to persist on Vercel
-    kv_saved = False
+    # Try Supabase first (recommended)
+    supabase_saved = False
     try:
-        from .storage import save_posts
-        if save_posts(data):
-            print("✅ Saved posts to Vercel KV")
-            kv_saved = True
+        from .supabase_storage import save_posts_to_supabase
+        if save_posts_to_supabase(posts):
+            print("✅ Saved posts to Supabase")
+            supabase_saved = True
     except Exception as e:
-        print(f"⚠️ KV save failed: {e}")
+        print(f"⚠️ Supabase save failed: {e}")
         import traceback
         traceback.print_exc()
     
-    # Fallback to file (for local development)
-    if not kv_saved:
+    # Fallback to KV (for Vercel without Supabase)
+    if not supabase_saved:
+        kv_saved = False
         try:
-            with open(CONTENT_POSTS_FILE, 'w') as f:
-                json.dump(data, f, indent=2)
-            print("✅ Saved posts to file")
-        except (OSError, PermissionError) as e:
-            # Handle read-only filesystem (e.g., on Vercel without KV)
-            print(f"⚠️ WARNING: Could not save to {CONTENT_POSTS_FILE}: {e}")
-            print("   ⚠️ CRITICAL: Post data is ONLY in memory cache and will be LOST after this request!")
-            print("   ⚠️ Set up Vercel KV in your Vercel project settings to persist data.")
-            # Don't raise - allow the function to continue, but warn loudly
+            from .storage import save_posts
+            if save_posts(data):
+                print("✅ Saved posts to Vercel KV")
+                kv_saved = True
+        except Exception as e:
+            print(f"⚠️ KV save failed: {e}")
+        
+        # Fallback to file (for local development)
+        if not kv_saved:
+            try:
+                with open(CONTENT_POSTS_FILE, 'w') as f:
+                    json.dump(data, f, indent=2)
+                print("✅ Saved posts to file")
+            except (OSError, PermissionError) as e:
+                # Handle read-only filesystem (e.g., on Vercel without storage)
+                print(f"⚠️ WARNING: Could not save to {CONTENT_POSTS_FILE}: {e}")
+                print("   ⚠️ CRITICAL: Post data is ONLY in memory cache and will be LOST after this request!")
+                print("   ⚠️ Set up Supabase or Vercel KV to persist data.")
+                # Don't raise - allow the function to continue, but warn loudly
 
 def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, include_cta=False):
     """
@@ -159,14 +183,27 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, in
             return post
         except Exception as e:
             # Save as idea even if AI fails - don't raise, just return the post
-            post['status'] = 'idea'
-            post['error'] = str(e)
+            post['status'] = 'idea'  # Always 'idea' when AI expansion fails
+            error_msg = str(e)
+            post['error'] = error_msg
+            # Don't add center_post when AI fails
             data = load_content_posts()
             data['posts'].append(post)
             save_content_posts(data)
             # Return the post instead of raising - frontend can handle it
-            print(f"⚠️ AI expansion failed: {str(e)}")
-            print("   Post saved as 'idea' status. User can expand manually later.")
+            print(f"⚠️ AI expansion failed: {error_msg}")
+            print("   Post saved as 'idea' status without center_post.")
+            print("   User can expand manually later or fix API key and try again.")
+            # Log specific error types for debugging
+            if "ANTHROPIC_API_KEY" in error_msg:
+                print("   🔑 Issue: ANTHROPIC_API_KEY missing or invalid")
+            elif "401" in error_msg or "authentication" in error_msg.lower():
+                print("   🔑 Issue: Invalid API key (authentication failed)")
+            elif "404" in error_msg or "not_found" in error_msg.lower():
+                print("   🤖 Issue: Model not found (check ANTHROPIC_MODEL setting)")
+            elif "JSON" in error_msg or "parsing" in error_msg.lower():
+                print("   📄 Issue: Claude returned invalid JSON format")
+                print(f"   Full error: {error_msg[:500]}")
             return post
     else:
         # Just save raw idea
@@ -177,6 +214,17 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, in
 
 def get_post(post_id):
     """Get a specific post by ID"""
+    # Try Supabase first for direct lookup
+    try:
+        from .supabase_storage import get_post_from_supabase
+        post = get_post_from_supabase(post_id)
+        if post:
+            print(f"✅ Found post in Supabase: {post_id}")
+            return post
+    except Exception as e:
+        print(f"⚠️ Supabase lookup failed: {e}")
+    
+    # Fallback to loading all posts
     data = load_content_posts()
     posts = data.get('posts', [])
     print(f"🔍 Looking for post_id: {post_id}")

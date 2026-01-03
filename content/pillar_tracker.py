@@ -9,30 +9,89 @@ from .center_post import get_post, list_posts
 CONTENT_METRICS_FILE = 'content_metrics.json'
 CONTENT_PILLARS_FILE = 'content_pillars.json'
 
-def load_pillars():
-    """Load pillar definitions"""
+def load_pillars(client_id=None):
+    """Load pillar definitions from Supabase, file, or memory cache"""
+    # Try Supabase first (recommended)
+    try:
+        from .supabase_storage import load_pillars_from_supabase
+        pillars = load_pillars_from_supabase(client_id=client_id)
+        if pillars:
+            return {"pillars": pillars}
+    except Exception as e:
+        print(f"⚠️ Supabase not available: {e}")
+    
+    # Fallback to file (for local development)
     if os.path.exists(CONTENT_PILLARS_FILE):
-        with open(CONTENT_PILLARS_FILE, 'r') as f:
-            return json.load(f)
+        try:
+            with open(CONTENT_PILLARS_FILE, 'r') as f:
+                file_data = json.load(f)
+                pillars = file_data.get('pillars', [])
+                if client_id:
+                    pillars = [p for p in pillars if p.get('client_id') == client_id]
+                return {"pillars": pillars}
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load {CONTENT_PILLARS_FILE}: {e}")
     return {"pillars": []}
 
 def save_pillars(data):
-    """Save pillar definitions"""
+    """Save pillar definitions to Supabase, file, or memory cache"""
+    pillars = data.get('pillars', [])
+    
+    # Try Supabase first (recommended)
+    supabase_saved = False
     try:
-        with open(CONTENT_PILLARS_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
-    except (OSError, PermissionError) as e:
-        # Handle read-only filesystem (e.g., on Vercel)
-        print(f"⚠️ Warning: Could not save to {CONTENT_PILLARS_FILE}: {e}")
-        print("   This is expected on read-only filesystems (e.g., Vercel).")
-        print("   Pillar data is returned but not persisted to disk.")
-        # Don't raise - allow the function to continue
+        from .supabase_storage import save_pillars_to_supabase
+        if save_pillars_to_supabase(pillars):
+            print("✅ Saved pillars to Supabase")
+            supabase_saved = True
+    except Exception as e:
+        print(f"⚠️ Supabase save failed: {e}")
+    
+    # Fallback to file (for local development)
+    if not supabase_saved:
+        try:
+            with open(CONTENT_PILLARS_FILE, 'w') as f:
+                json.dump(data, f, indent=2)
+            print("✅ Saved pillars to file")
+        except (OSError, PermissionError) as e:
+            # Handle read-only filesystem (e.g., on Vercel)
+            print(f"⚠️ Warning: Could not save to {CONTENT_PILLARS_FILE}: {e}")
+            print("   This is expected on read-only filesystems (e.g., Vercel).")
+            print("   Pillar data is returned but not persisted to disk.")
+            print("   To persist data, set up Supabase or Vercel KV.")
+            # Don't raise - allow the function to continue
 
-def load_metrics():
-    """Load content metrics"""
+def load_metrics(post_id=None, pillar_id=None):
+    """Load content metrics from Supabase, file, or memory cache"""
+    # Try Supabase first (recommended)
+    try:
+        from .supabase_storage import load_metrics_from_supabase
+        supabase_data = load_metrics_from_supabase(post_id=post_id, pillar_id=pillar_id)
+        if supabase_data:
+            return supabase_data
+    except Exception as e:
+        print(f"⚠️ Supabase not available: {e}")
+    
+    # Fallback to file (for local development)
     if os.path.exists(CONTENT_METRICS_FILE):
-        with open(CONTENT_METRICS_FILE, 'r') as f:
-            return json.load(f)
+        try:
+            with open(CONTENT_METRICS_FILE, 'r') as f:
+                file_data = json.load(f)
+                metrics = file_data.get('metrics', {})
+                # Filter by post_id or pillar_id if needed
+                if post_id or pillar_id:
+                    # This is a simplified filter - adjust based on your metrics structure
+                    filtered_metrics = {}
+                    for key, value in metrics.items():
+                        if post_id and value.get('post_id') != post_id:
+                            continue
+                        if pillar_id and value.get('pillar_id') != pillar_id:
+                            continue
+                        filtered_metrics[key] = value
+                    return {"metrics": filtered_metrics}
+                return file_data
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load {CONTENT_METRICS_FILE}: {e}")
     return {"metrics": {}}
 
 def save_metrics(data):

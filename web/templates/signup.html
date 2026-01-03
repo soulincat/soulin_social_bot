@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Soul in Social</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/web/styles/dashboard.css">
+</head>
+<body>
+    <canvas id="noise-canvas"></canvas>
+    <main style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem;">
+        <div class="glass-card" style="max-width: 400px; width: 100%; padding: 2.5rem;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div class="logo-glyph" style="font-size: 3rem; margin-bottom: 1rem;">☾</div>
+                <h1 style="font-size: 1.75rem; margin-bottom: 0.5rem;">Create account</h1>
+                <p style="color: #a8b2d1;">Start managing your projects</p>
+            </div>
+            
+            <form id="signup-form" onsubmit="handleSignup(event)">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: #a8b2d1; font-size: 0.9rem; margin-bottom: 0.5rem;">Name</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        required 
+                        style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #ffffff; font-size: 1rem;"
+                        placeholder="Your name"
+                    >
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: #a8b2d1; font-size: 0.9rem; margin-bottom: 0.5rem;">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        required 
+                        style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #ffffff; font-size: 1rem;"
+                        placeholder="you@example.com"
+                    >
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: #a8b2d1; font-size: 0.9rem; margin-bottom: 0.5rem;">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        required 
+                        minlength="6"
+                        style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #ffffff; font-size: 1rem;"
+                        placeholder="••••••••"
+                    >
+                    <p style="color: #6b7280; font-size: 0.8rem; margin-top: 0.5rem;">At least 6 characters</p>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; color: #a8b2d1; font-size: 0.9rem; cursor: pointer;">
+                        <input type="checkbox" id="terms" required style="margin-right: 0.5rem;">
+                        I agree to the terms and conditions
+                    </label>
+                </div>
+                
+                <div id="error-message" style="display: none; padding: 0.75rem; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.3); border-radius: 8px; color: #f87171; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+                
+                <button 
+                    type="submit" 
+                    class="glass-button" 
+                    style="width: 100%; padding: 0.75rem; font-size: 1rem; margin-bottom: 1rem;"
+                    id="submit-btn"
+                >
+                    Create Account
+                </button>
+            </form>
+            
+            <div style="text-align: center; color: #a8b2d1; font-size: 0.9rem;">
+                Already have an account? <a href="/login" style="color: #a855f7; text-decoration: none;">Sign in</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating account...';
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, name })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store token
+                    if (data.access_token) {
+                        sessionStorage.setItem('access_token', data.access_token);
+                    }
+                    
+                    // Redirect to workspace
+                    window.location.href = '/workspace';
+                } else {
+                    errorDiv.textContent = data.error || 'Registration failed. Please try again.';
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Account';
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        }
+
+        // Initialize noise canvas
+        const canvas = document.getElementById('noise-canvas');
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const noise = Math.random() * 10;
+                imageData.data[i] = noise;
+                imageData.data[i + 1] = noise;
+                imageData.data[i + 2] = noise;
+                imageData.data[i + 3] = 5;
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+    </script>
+</body>
+</html>
+
+

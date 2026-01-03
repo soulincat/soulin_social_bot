@@ -1,0 +1,14 @@
+{
+  "name": "soulin-social-bot",
+  "version": "1.0.0",
+  "description": "Social media metrics dashboard and content management",
+  "scripts": {
+    "dev": "python3 app.py",
+    "start": "python3 app.py",
+    "setup-user": "python3 grant_user_access.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+

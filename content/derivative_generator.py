@@ -13,27 +13,45 @@ CONTENT_DERIVATIVES_FILE = 'content_derivatives.json'
 # In-memory cache for derivatives created during session (fallback)
 _in_memory_derivatives = {}
 
-def load_derivatives():
-    """Load all derivatives from KV, file, or memory cache"""
-    # Try KV first (for Vercel)
+def load_derivatives(post_id=None):
+    """Load all derivatives from Supabase, KV, file, or memory cache"""
+    # Try Supabase first (recommended)
+    try:
+        from .supabase_storage import load_derivatives_from_supabase
+        supabase_data = load_derivatives_from_supabase(post_id=post_id)
+        if supabase_data and supabase_data.get('derivatives'):
+            # Merge with in-memory cache
+            all_derivatives = {deriv['id']: deriv for deriv in supabase_data.get('derivatives', [])}
+            all_derivatives.update(_in_memory_derivatives)
+            return {"derivatives": list(all_derivatives.values())}
+    except Exception as e:
+        print(f"⚠️ Supabase not available: {e}")
+    
+    # Fallback to KV (for Vercel without Supabase)
     try:
         from .storage import load_derivatives
         kv_data = load_derivatives()
         if kv_data:
+            # Filter by post_id if needed
+            derivatives = kv_data.get('derivatives', [])
+            if post_id:
+                derivatives = [d for d in derivatives if d.get('post_id') == post_id]
             # Merge with in-memory cache
-            all_derivatives = {deriv['id']: deriv for deriv in kv_data.get('derivatives', [])}
+            all_derivatives = {deriv['id']: deriv for deriv in derivatives}
             all_derivatives.update(_in_memory_derivatives)
             return {"derivatives": list(all_derivatives.values())}
     except Exception as e:
         print(f"⚠️ KV not available: {e}")
     
-    # Fallback to file
+    # Fallback to file (for local development)
     file_derivatives = []
     if os.path.exists(CONTENT_DERIVATIVES_FILE):
         try:
             with open(CONTENT_DERIVATIVES_FILE, 'r') as f:
                 file_data = json.load(f)
                 file_derivatives = file_data.get('derivatives', [])
+                if post_id:
+                    file_derivatives = [d for d in file_derivatives if d.get('post_id') == post_id]
         except Exception as e:
             print(f"⚠️ Warning: Could not load {CONTENT_DERIVATIVES_FILE}: {e}")
     
@@ -44,32 +62,49 @@ def load_derivatives():
     return {"derivatives": list(all_derivatives.values())}
 
 def save_derivatives(data):
-    """Save derivatives to KV, file, or memory cache"""
+    """Save derivatives to Supabase, KV, file, or memory cache"""
     # Update in-memory cache
     global _in_memory_derivatives
-    for deriv in data.get('derivatives', []):
+    derivatives = data.get('derivatives', [])
+    for deriv in derivatives:
         _in_memory_derivatives[deriv['id']] = deriv
     
-    # Try KV first (for Vercel)
+    # Try Supabase first (recommended)
+    supabase_saved = False
     try:
-        from .storage import save_derivatives
-        if save_derivatives(data):
-            print("✅ Saved derivatives to Vercel KV")
-            return
+        from .supabase_storage import save_derivatives_to_supabase
+        if save_derivatives_to_supabase(derivatives):
+            print("✅ Saved derivatives to Supabase")
+            supabase_saved = True
     except Exception as e:
-        print(f"⚠️ KV not available: {e}")
+        print(f"⚠️ Supabase save failed: {e}")
+        import traceback
+        traceback.print_exc()
     
-    # Fallback to file
-    try:
-        with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
-        print("✅ Saved derivatives to file")
-    except (OSError, PermissionError) as e:
-        # Handle read-only filesystem (e.g., on Vercel without KV)
-        print(f"⚠️ Warning: Could not save to {CONTENT_DERIVATIVES_FILE}: {e}")
-        print("   Derivative data is cached in memory for this session only.")
-        print("   To persist data, set up Vercel KV in your Vercel project settings.")
-        # Don't raise - allow the function to continue
+    # Fallback to KV (for Vercel without Supabase)
+    if not supabase_saved:
+        kv_saved = False
+        try:
+            from .storage import save_derivatives
+            if save_derivatives(data):
+                print("✅ Saved derivatives to Vercel KV")
+                kv_saved = True
+        except Exception as e:
+            print(f"⚠️ KV not available: {e}")
+        
+        # Fallback to file (for local development)
+        if not kv_saved:
+            try:
+                with open(CONTENT_DERIVATIVES_FILE, 'w') as f:
+                    json.dump(data, f, indent=2)
+                print("✅ Saved derivatives to file")
+            except (OSError, PermissionError) as e:
+                # Handle read-only filesystem (e.g., on Vercel without storage)
+                print(f"⚠️ Warning: Could not save to {CONTENT_DERIVATIVES_FILE}: {e}")
+                print("   This is expected on read-only filesystems (e.g., Vercel).")
+                print("   Derivative data is cached in memory for this session only.")
+                print("   To persist data, set up Supabase or Vercel KV.")
+                # Don't raise - allow the function to continue
 
 def update_derivative(deriv_id, updates):
     """Update a derivative with new data"""
@@ -384,12 +419,10 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
 
 def get_derivatives(post_id=None, status=None):
     """Get derivatives, optionally filtered by post_id or status"""
-    data = load_derivatives()
+    data = load_derivatives(post_id=post_id)  # Pass post_id to load_derivatives for efficient filtering
     derivatives = data.get('derivatives', [])
     
-    if post_id:
-        derivatives = [d for d in derivatives if d.get('post_id') == post_id]
-    
+    # Additional filtering by status if needed
     if status:
         derivatives = [d for d in derivatives if d.get('metadata', {}).get('status') == status]
     
