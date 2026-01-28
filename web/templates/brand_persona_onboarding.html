@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Persona Onboarding - Soul in Social</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/web/styles/dashboard.css">
+    <style>
+        .onboarding-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .onboarding-step {
+            display: none;
+        }
+        .onboarding-step.active {
+            display: block;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .step-dot.active {
+            background: #a855f7;
+            transform: scale(1.3);
+        }
+        .step-dot.completed {
+            background: rgba(168, 85, 247, 0.5);
+        }
+        .interview-container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .question-display {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .answer-input {
+            width: 100%;
+            min-height: 150px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: rgba(168, 85, 247, 0.5);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .interview-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            color: #a8b2d1;
+            font-size: 0.9rem;
+        }
+        .btn-primary {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            padding: 0.75rem 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #ffffff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .persona-preview {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .persona-preview h3 {
+            color: #ffffff;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .persona-preview pre {
+            color: #a8b2d1;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+        }
+        .project-selector {
+            margin-bottom: 2rem;
+        }
+        .project-selector select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        .intro-text {
+            color: #a8b2d1;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+        .intro-text h2 {
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+        .intro-text ul {
+            margin-left: 1.5rem;
+            margin-top: 1rem;
+        }
+        .intro-text li {
+            margin-bottom: 0.5rem;
+        }
+        .warning-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #fbbf24;
+        }
+        .success-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #22c55e;
+        }
+    </style>
+</head>
+<body style="position: relative; min-height: 100vh; padding-bottom: 3rem;">
+    <canvas id="noise-canvas"></canvas>
+    <main>
+        <header class="app-header">
+            <div class="brand-mark">
+                <div class="logo-glyph">
+                    <img id="user-profile-pic" src="/web/assets/default-avatar.png" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(168, 85, 247, 0.3);" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
+                <div>
+                    <p class="pill-badge" id="project-name">Brand Persona</p>
+                    <h1>Onboarding</h1>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <a href="/workspace" class="ghost-button">Workspace</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
+            </div>
+        </header>
+
+        <div class="onboarding-container">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-dot active" data-step="0"></div>
+                <div class="step-dot" data-step="1"></div>
+                <div class="step-dot" data-step="2"></div>
+                <div class="step-dot" data-step="3"></div>
+            </div>
+
+            <!-- Step 0: Introduction -->
+            <div class="onboarding-step active" id="step-0">
+                <section class="glass-card">
+                    <div class="panel-title">Welcome to Brand Persona Training</div>
+                    <div class="intro-text">
+                        <p>This onboarding process will help us understand your brand's unique voice, tone, and style so we can replicate it perfectly in all content generation.</p>
+                        
+                        <h2>Choose Your Path:</h2>
+                        <ul>
+                            <li><strong>Quick (5 questions)</strong> - Covers 80% of your brand voice in ~5 minutes. Perfect for getting started fast.</li>
+                            <li><strong>Extended (20 questions)</strong> - Next most important questions. Complete after the quick version for deeper persona.</li>
+                            <li><strong>Full (100 questions)</strong> - Comprehensive interview covering all aspects. Takes ~60 minutes but creates the most complete persona.</li>
+                        </ul>
+
+                        <h2>Key Principles:</h2>
+                        <ul>
+                            <li><strong>Be Specific</strong> - Instead of "I like clarity," tell us "I never use 'leverage' as a verb, I keep paragraphs under 3 sentences"</li>
+                            <li><strong>Focus on Rejections</strong> - 80% of your persona will be what you'd NEVER say or do</li>
+                            <li><strong>Answer Honestly</strong> - This is your brand's DNA. Be authentic, not what you think sounds good.</li>
+                        </ul>
+
+                        <div class="warning-box">
+                            <strong>💡 Pro Tip:</strong> Use voice dictation (like Wispr Flow) to answer questions out loud. Talking makes you honest; typing makes you edit.
+                        </div>
+                    </div>
+
+                    <div class="project-selector">
+                        <label for="project-select" style="display: block; margin-bottom: 0.75rem; color: #ffffff; font-weight: 500;">Select Project</label>
+                        <select id="project-select">
+                            <option value="">-- Select a project --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.75rem; color: #ffffff; font-weight: 500;">Interview Mode</label>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; flex: 1; min-width: 200px;">
+                                <input type="radio" name="interview-mode" value="quick" checked style="margin: 0;">
+                                <div>
+                                    <strong style="color: #ffffff;">Quick (5 questions)</strong>
+                                    <div style="color: #a8b2d1; font-size: 0.85rem; margin-top: 0.25rem;">Covers 80% of brand voice • ~5 minutes</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; flex: 1; min-width: 200px;">
+                                <input type="radio" name="interview-mode" value="extended" style="margin: 0;">
+                                <div>
+                                    <strong style="color: #ffffff;">Extended (20 questions)</strong>
+                                    <div style="color: #a8b2d1; font-size: 0.85rem; margin-top: 0.25rem;">Next most important • ~15 minutes</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; flex: 1; min-width: 200px;">
+                                <input type="radio" name="interview-mode" value="full" style="margin: 0;">
+                                <div>
+                                    <strong style="color: #ffffff;">Full (100 questions)</strong>
+                                    <div style="color: #a8b2d1; font-size: 0.85rem; margin-top: 0.25rem;">Comprehensive • ~60 minutes</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="startOnboarding()" id="start-btn">Start Interview</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Step 1: Interview -->
+            <div class="onboarding-step" id="step-1">
+                <section class="glass-card">
+                    <div class="panel-title">Brand Persona Interview</div>
+                    
+                    <div class="interview-container">
+                        <div class="interview-progress">
+                            <span id="question-number">Question 1 of 100</span>
+                            <span id="category-name">Category: Beliefs & Contrarian Takes</span>
+                        </div>
+                        
+                        <div class="question-display" id="question-text">
+                            Loading first question...
+                        </div>
+                        
+                        <textarea 
+                            id="answer-input" 
+                            class="answer-input" 
+                            placeholder="Type your answer here... (or use voice dictation)"
+                            rows="6"
+                        ></textarea>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-secondary" onclick="skipQuestion()" id="skip-btn">Skip</button>
+                        <button class="btn-primary" onclick="submitAnswer()" id="submit-btn">Next Question</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Step 2: Review Persona -->
+            <div class="onboarding-step" id="step-2">
+                <section class="glass-card">
+                    <div class="panel-title">Review Your Brand Persona</div>
+                    
+                    <p style="color: #a8b2d1; margin-bottom: 1.5rem;">
+                        Here's your complete brand persona document. Review it and make any edits before saving.
+                    </p>
+
+                    <div class="persona-preview">
+                        <h3>Brand Persona Document</h3>
+                        <pre id="persona-content">Loading persona...</pre>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-secondary" onclick="editPersona()">Edit Persona</button>
+                        <button class="btn-primary" onclick="savePersona()" id="save-persona-btn">Save & Complete</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Step 3: Complete -->
+            <div class="onboarding-step" id="step-3">
+                <section class="glass-card">
+                    <div class="success-box">
+                        <h2 style="color: #22c55e; margin-bottom: 0.5rem;">✅ Onboarding Complete!</h2>
+                        <p>Your brand persona has been saved and is now active for all content generation.</p>
+                    </div>
+
+                    <p style="color: #a8b2d1; margin-bottom: 2rem;">
+                        Your brand's voice, tone, and style are now captured in a single document. Every piece of content generated will use this persona to match your unique brand identity.
+                    </p>
+
+                    <div class="action-buttons">
+                        <a href="/workspace" class="btn-primary">Go to Workspace</a>
+                        <a href="/settings" class="btn-secondary">Edit Settings</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); text-align: center; padding: 1rem; color: rgba(168, 178, 209, 0.6); font-size: 0.875rem; pointer-events: none; width: 100%;">
+        <p style="margin: 0;">
+            Built by <a href="https://soulin.co" target="_blank" rel="noopener noreferrer" style="color: #203EAE; text-decoration: none; transition: color 0.2s ease; pointer-events: auto;">©SOULIN</a>
+        </p>
+    </footer>
+
+    <script>
+        let currentClientId = null;
+        let currentQuestionIndex = 0;
+        let interviewSessionId = null;
+        let answers = [];
+        let personaDocument = null;
+
+        // Initialize
+        async function init() {
+            await checkAuth();
+            await loadProjects();
+        }
+
+        // Load projects for selector
+        async function loadProjects() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById('project-select');
+                    
+                    if (data.clients && data.clients.length > 0) {
+                        select.innerHTML = '<option value="">-- Select a project --</option>';
+                        data.clients.forEach(client => {
+                            const option = document.createElement('option');
+                            option.value = client.client_id;
+                            option.textContent = client.name;
+                            select.appendChild(option);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">No projects found</option>';
+                        document.getElementById('start-btn').disabled = true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        }
+
+        // Start onboarding interview
+        async function startOnboarding() {
+            const projectSelect = document.getElementById('project-select');
+            currentClientId = projectSelect.value;
+            
+            if (!currentClientId) {
+                alert('Please select a project first');
+                return;
+            }
+
+            // Get selected interview mode
+            const modeInputs = document.querySelectorAll('input[name="interview-mode"]');
+            let selectedMode = 'quick';
+            for (const input of modeInputs) {
+                if (input.checked) {
+                    selectedMode = input.value;
+                    break;
+                }
+            }
+
+            // Update project name display
+            const selectedOption = projectSelect.options[projectSelect.selectedIndex];
+            document.getElementById('project-name').textContent = selectedOption.textContent;
+
+            // Show step 1
+            showStep(1);
+            
+            // Start interview session
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/onboarding/${currentClientId}/start`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ mode: selectedMode }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    interviewSessionId = data.session_id;
+                    await loadNextQuestion();
+                } else {
+                    const error = await response.json();
+                    alert(`Error starting interview: ${error.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error starting interview:', error);
+                alert('Error starting interview. Please try again.');
+            }
+        }
+
+        // Load next question
+        async function loadNextQuestion() {
+            if (!interviewSessionId) return;
+
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/onboarding/${currentClientId}/question?session_id=${interviewSessionId}`, {
+                    headers: headers,
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.complete) {
+                        // Interview complete, move to review
+                        await completeInterview();
+                    } else {
+                        // Show question
+                        document.getElementById('question-text').textContent = data.question;
+                        document.getElementById('question-number').textContent = `Question ${data.question_number} of ${data.total_questions}`;
+                        document.getElementById('category-name').textContent = `Category: ${data.category}`;
+                        document.getElementById('answer-input').value = '';
+                        currentQuestionIndex = data.question_number;
+                        
+                        // Update step indicator
+                        updateStepIndicator(1, data.question_number, data.total_questions);
+                    }
+                } else {
+                    const error = await response.json();
+                    alert(`Error loading question: ${error.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error loading question:', error);
+                alert('Error loading question. Please try again.');
+            }
+        }
+
+        // Submit answer
+        async function submitAnswer() {
+            const answer = document.getElementById('answer-input').value.trim();
+            
+            if (!answer && !confirm('Are you sure you want to skip this question?')) {
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/onboarding/${currentClientId}/answer`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        session_id: interviewSessionId,
+                        answer: answer || '[Skipped]'
+                    }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    await loadNextQuestion();
+                } else {
+                    const error = await response.json();
+                    alert(`Error submitting answer: ${error.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error submitting answer:', error);
+                alert('Error submitting answer. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Next Question';
+            }
+        }
+
+        // Skip question
+        async function skipQuestion() {
+            await submitAnswer();
+        }
+
+        // Complete interview
+        async function completeInterview() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/onboarding/${currentClientId}/complete?session_id=${interviewSessionId}`, {
+                    headers: headers,
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    personaDocument = data.persona;
+                    document.getElementById('persona-content').textContent = data.persona;
+                    showStep(2);
+                    updateStepIndicator(2);
+                } else {
+                    const error = await response.json();
+                    alert(`Error completing interview: ${error.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error completing interview:', error);
+                alert('Error completing interview. Please try again.');
+            }
+        }
+
+        // Save persona
+        async function savePersona() {
+            const saveBtn = document.getElementById('save-persona-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/onboarding/${currentClientId}/save`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        persona: document.getElementById('persona-content').value || personaDocument
+                    }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showStep(3);
+                    updateStepIndicator(3);
+                } else {
+                    const error = await response.json();
+                    alert(`Error saving persona: ${error.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error saving persona:', error);
+                alert('Error saving persona. Please try again.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Save & Complete';
+            }
+        }
+
+        // Edit persona (make textarea editable)
+        function editPersona() {
+            const content = document.getElementById('persona-content');
+            const textarea = document.createElement('textarea');
+            textarea.id = 'persona-content';
+            textarea.className = 'answer-input';
+            textarea.value = content.textContent;
+            textarea.style.minHeight = '400px';
+            content.parentNode.replaceChild(textarea, content);
+        }
+
+        // Show step
+        function showStep(stepNumber) {
+            document.querySelectorAll('.onboarding-step').forEach((step, index) => {
+                step.classList.toggle('active', index === stepNumber);
+            });
+        }
+
+        // Update step indicator
+        function updateStepIndicator(currentStep, progress = null, total = null) {
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active', 'completed');
+                if (index < currentStep) {
+                    dot.classList.add('completed');
+                } else if (index === currentStep) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        // Auth functions
+        async function checkAuth() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'block';
+                    }
+                    loadUserProfilePicture(data.user);
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+        
+        async function loadUserProfilePicture(user) {
+            if (!user) return;
+            const profilePicEl = document.getElementById('user-profile-pic');
+            if (!profilePicEl) return;
+            
+            const defaultPic = '/web/assets/default-avatar.png';
+            profilePicEl.src = defaultPic;
+        }
+
+        // Initialize noise canvas
+        const canvas = document.getElementById('noise-canvas');
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const noise = Math.random() * 50;
+                imageData.data[i] = noise;
+                imageData.data[i + 1] = noise;
+                imageData.data[i + 2] = noise;
+                imageData.data[i + 3] = 5;
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

@@ -64,36 +64,47 @@ class ClaudeClient:
         # Build brand context section
         brand_context = ""
         if brand:
-            brand_context = "\n\nBRAND GUIDELINES:\n"
+            # Check if persona document exists (from onboarding)
+            persona_document = brand.get('persona')
             
-            if brand.get('mission'):
-                brand_context += f"Mission: {brand['mission']}\n"
-            
-            if brand.get('positioning'):
-                brand_context += f"Positioning: {brand['positioning']}\n"
-            
-            voice = brand.get('voice', {})
-            if voice.get('tone'):
-                brand_context += f"Tone: {voice['tone']}\n"
-            if voice.get('style'):
-                brand_context += f"Writing Style: {voice['style']}\n"
-            if voice.get('personality'):
-                brand_context += f"Personality Traits: {', '.join(voice['personality'])}\n"
-            
-            if brand.get('values'):
-                brand_context += f"Core Values: {', '.join(brand['values'])}\n"
-            
-            if brand.get('content_goals'):
-                brand_context += f"Content Goals: {', '.join(brand['content_goals'])}\n"
-            
-            if brand.get('do_not_use'):
-                brand_context += f"Avoid: {', '.join(brand['do_not_use'])}\n"
-            
-            examples = brand.get('examples', {})
-            if examples.get('good_content'):
-                brand_context += f"\nGood Content Example:\n{examples['good_content']}\n"
-            if examples.get('bad_content'):
-                brand_context += f"\nBad Content Example (avoid this style):\n{examples['bad_content']}\n"
+            if persona_document:
+                # Use the comprehensive persona document from onboarding
+                brand_context = f"\n\nBRAND PERSONA DOCUMENT:\n{persona_document}\n\n"
+                brand_context += "CRITICAL: Read the persona document above carefully. This is the complete brand voice profile. "
+                brand_context += "Follow the guidelines, avoid the "Never" items, and match the writing style described. "
+                brand_context += "Apply the persona with judgment, not rigidly - let it guide your writing naturally.\n"
+            else:
+                # Fallback to legacy brand settings if persona not available
+                brand_context = "\n\nBRAND GUIDELINES:\n"
+                
+                if brand.get('mission'):
+                    brand_context += f"Mission: {brand['mission']}\n"
+                
+                if brand.get('positioning'):
+                    brand_context += f"Positioning: {brand['positioning']}\n"
+                
+                voice = brand.get('voice', {})
+                if voice.get('tone'):
+                    brand_context += f"Tone: {voice['tone']}\n"
+                if voice.get('style'):
+                    brand_context += f"Writing Style: {voice['style']}\n"
+                if voice.get('personality'):
+                    brand_context += f"Personality Traits: {', '.join(voice['personality'])}\n"
+                
+                if brand.get('values'):
+                    brand_context += f"Core Values: {', '.join(brand['values'])}\n"
+                
+                if brand.get('content_goals'):
+                    brand_context += f"Content Goals: {', '.join(brand['content_goals'])}\n"
+                
+                if brand.get('do_not_use'):
+                    brand_context += f"Avoid: {', '.join(brand['do_not_use'])}\n"
+                
+                examples = brand.get('examples', {})
+                if examples.get('good_content'):
+                    brand_context += f"\nGood Content Example:\n{examples['good_content']}\n"
+                if examples.get('bad_content'):
+                    brand_context += f"\nBad Content Example (avoid this style):\n{examples['bad_content']}\n"
         
         prompt = f"""Raw idea: {raw_idea}
 
@@ -103,7 +114,7 @@ Business context:
 - Type: {business.get('type', 'business')}
 - Target audience: {business.get('target_audience', 'general')}
 {brand_context}
-IMPORTANT: The content must align with the brand guidelines above. Use the specified tone, style, and personality. Follow the content goals and avoid the listed elements.
+IMPORTANT: The content must align with the brand persona/guidelines above. {"If a persona document is provided, it takes precedence - follow it carefully." if brand.get('persona') else "Use the specified tone, style, and personality. Follow the content goals and avoid the listed elements."}
 {f"CTA: End the content with this call-to-action: {cta_info['text']} ({cta_info['url']})" if cta_info and cta_info.get('text') and cta_info.get('url') else ""}
 
 Check alignment with:
@@ -384,7 +395,7 @@ Return JSON format:
         except Exception as e:
             raise Exception(f"Error generating blog version: {str(e)}")
     
-    def generate_social_posts(self, center_post_content, platforms=['linkedin', 'x', 'threads', 'instagram', 'substack'], brand_socials=None, cta_info=None):
+    def generate_social_posts(self, center_post_content, platforms=['linkedin', 'x', 'threads', 'instagram', 'substack'], brand_socials=None, cta_info=None, brand_config=None):
         """
         Generate social media posts for multiple platforms
         Returns: Dict with posts per platform
@@ -394,6 +405,7 @@ Return JSON format:
             platforms: List of platforms to generate for
             brand_socials: Optional dict of platform-specific brand settings from brand.socials
             cta_info: Optional dict with 'text' and 'url' for CTA to include
+            brand_config: Optional full brand config (to access persona document)
         """
         # Default platform requirements
         default_requirements = {
@@ -452,10 +464,17 @@ Return JSON format:
         
         post_count_text = '\n'.join(post_count_reqs) if post_count_reqs else ''
         
+        # Add persona context if available
+        persona_context = ""
+        if brand_config and brand_config.get('brand', {}).get('persona'):
+            persona_context = f"\n\nBRAND PERSONA:\n{brand_config['brand']['persona']}\n\n"
+            persona_context += "CRITICAL: Follow the brand persona document above. Match the voice, tone, and style. "
+            persona_context += "Avoid the 'Never' items listed in the persona. Apply naturally, not rigidly.\n"
+        
         prompt = f"""Generate social media posts from this content:
 
 {center_post_content}
-
+{persona_context}
 Generate posts for these platforms: {', '.join([p.upper() for p in platforms])}
 
 Requirements:

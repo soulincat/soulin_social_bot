@@ -143,6 +143,7 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
     # Load brand social settings and main_product CTA if client_id available
     brand_socials = {}
     cta_info = None
+    brand_config = None
     if client_id:
         try:
             import json
@@ -153,6 +154,8 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
                     for client in clients_data.get('clients', []):
                         if client.get('client_id') == client_id:
                             brand_socials = client.get('brand', {}).get('socials', {})
+                            # Store full brand config for persona access
+                            brand_config = {'brand': client.get('brand', {})}
                             # Get CTA info if post has include_cta flag
                             if post.get('include_cta'):
                                 main_product = client.get('brand', {}).get('main_product', {})
@@ -233,12 +236,13 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
         social_platforms = [p for p in platforms if p in ['linkedin', 'x', 'threads', 'instagram', 'substack']]
         if social_platforms:
             try:
-                # Pass brand social settings and CTA info to AI client
+                # Pass brand social settings, CTA info, and brand config (for persona) to AI client
                 social_posts = ai_client.generate_social_posts(
                     source_content, 
                     social_platforms,
                     brand_socials=brand_socials,
-                    cta_info=cta_info
+                    cta_info=cta_info,
+                    brand_config=brand_config
                 )
                 
                 # Get post count per platform from brand settings

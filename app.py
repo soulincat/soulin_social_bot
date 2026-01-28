@@ -6,6 +6,8 @@ from functools import wraps
 import os
 import json
 import requests
+import uuid
+import re
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
@@ -447,7 +449,7 @@ def api_expand_post(post_id):
             # Get CTA info if post has include_cta flag
             cta_info = None
             if post.get('include_cta'):
-                main_product = client.get('brand', {}).get('main_product', {})
+                main_product = (client.get('brand') or {}).get('main_product', {})
                 if main_product.get('cta_text') and main_product.get('cta_url'):
                     cta_info = {
                         'text': main_product['cta_text'],
@@ -637,10 +639,10 @@ def api_regenerate_derivative(deriv_id):
                 
                 for client in clients_data.get('clients', []):
                     if client.get('client_id') == client_id:
-                        brand_socials = client.get('brand', {}).get('socials', {})
+                        brand_socials = (client.get('brand') or {}).get('socials', {})
                         # Get CTA info if post has include_cta flag
                         if post.get('include_cta'):
-                            main_product = client.get('brand', {}).get('main_product', {})
+                            main_product = (client.get('brand') or {}).get('main_product', {})
                             if main_product.get('cta_text') and main_product.get('cta_url'):
                                 cta_info = {
                                     'text': main_product['cta_text'],
@@ -803,6 +805,116 @@ def content_create_page():
 def content_detail_page(post_id):
     """Content detail page"""
     return send_file('web/templates/content_detail.html')
+
+@app.route('/api/clients', methods=['POST'])
+@require_auth
+def api_create_client():
+    """Create a new client/project"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        data = request.json
+        project_name = data.get('name', '').strip()
+        
+        if not project_name:
+            return jsonify({"error": "Project name is required"}), 400
+        
+        # Generate client_id from name (slugify)
+        client_id = re.sub(r'[^a-z0-9]+', '-', project_name.lower()).strip('-')
+        if not client_id:
+            client_id = f"project-{uuid.uuid4().hex[:8]}"
+        
+        # Ensure uniqueness
+        from content.supabase_storage import load_clients_from_supabase
+        existing_clients = load_clients_from_supabase()
+        existing_ids = [c.get('client_id') for c in existing_clients]
+        original_client_id = client_id
+        counter = 1
+        while client_id in existing_ids:
+            client_id = f"{original_client_id}-{counter}"
+            counter += 1
+        
+        # Create client data
+        new_client = {
+            'client_id': client_id,
+            'name': project_name,
+            'status': 'active',
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat(),
+            'brand': {},
+            'funnel_structure': {},
+            'connected_accounts': {},
+            'metadata': {}
+        }
+        
+        # Save to Supabase
+        from content.supabase_storage import save_client_to_supabase
+        if save_client_to_supabase(new_client):
+            # Grant user owner access to the new client
+            # Use service role key for admin operations (bypasses RLS)
+            service_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+            if service_key:
+                try:
+                    from supabase import create_client
+                    service_client = create_client(os.getenv('SUPABASE_URL'), service_key)
+                    result = service_client.table('user_clients').insert({
+                        'user_id': user['id'],
+                        'client_id': client_id,
+                        'role': 'owner'
+                    }).execute()
+                    print(f"✅ Granted owner access to user {user['id']} for client {client_id}")
+                except Exception as e:
+                    print(f"⚠️ Error granting user access with service key: {e}")
+                    import traceback
+                    traceback.print_exc()
+            else:
+                # Fallback to regular client (may fail due to RLS)
+                from content.supabase_storage import get_supabase_client
+                supabase = get_supabase_client()
+                if supabase:
+                    try:
+                        result = supabase.table('user_clients').insert({
+                            'user_id': user['id'],
+                            'client_id': client_id,
+                            'role': 'owner'
+                        }).execute()
+                        print(f"✅ Granted owner access to user {user['id']} for client {client_id}")
+                    except Exception as e:
+                        print(f"⚠️ Error granting user access: {e}")
+                        print(f"   Note: This may fail due to RLS policies. Consider using SUPABASE_SERVICE_ROLE_KEY.")
+                        import traceback
+                        traceback.print_exc()
+            
+            # Clear workspace cache for this user
+            user_id = user['id']
+            cache_key = f"workspace_projects_{user_id}"
+            with _cache_lock:
+                if cache_key in _workspace_cache:
+                    del _workspace_cache[cache_key]
+                    print(f"✅ Cleared workspace cache for user {user_id}")
+            
+            # Also save to JSON file as fallback
+            try:
+                with open('clients.json', 'r') as f:
+                    clients_data = json.load(f)
+            except FileNotFoundError:
+                clients_data = {"clients": []}
+            
+            clients_data['clients'].append(new_client)
+            with open('clients.json', 'w') as f:
+                json.dump(clients_data, f, indent=2)
+            
+            return jsonify(new_client), 201
+        else:
+            return jsonify({"error": "Failed to save client"}), 500
+            
+    except Exception as e:
+        print(f"❌ Error creating client: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/clients', methods=['GET'])
 @require_auth
@@ -1075,6 +1187,12 @@ def product_page():
     """Product management page"""
     return send_file('web/templates/product.html')
 
+@app.route('/brand')
+@require_auth
+def brand_identity_page():
+    """Brand identity page"""
+    return send_file('web/templates/brand_identity.html')
+
 @app.route('/api/clients/<client_id>/brand', methods=['GET'])
 def api_get_brand(client_id):
     """Get brand settings for a client"""
@@ -1095,7 +1213,7 @@ def api_get_brand(client_id):
         if not client:
             return jsonify({"brand": {}})
         
-        brand = client.get('brand', {})
+        brand = client.get('brand') or {}
         return jsonify({"brand": brand})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1133,9 +1251,9 @@ def api_get_social_profiles():
                 'connected_accounts': {}
             }
         
-        brand = client.get('brand', {})
+        brand = client.get('brand') or {}
         socials = brand.get('socials', {})
-        connected_accounts = client.get('connected_accounts', {})
+        connected_accounts = client.get('connected_accounts') or {}
         
         profiles = []
         total_followers = 0
@@ -1290,7 +1408,7 @@ def api_get_products():
                 }
             }
         
-        brand = client.get('brand', {})
+        brand = client.get('brand') or {}
         main_product = brand.get('main_product', {})
         
         products = []
@@ -1362,7 +1480,7 @@ def api_get_growth_data():
             }
         
         # Get current earnings (from products)
-        brand = client.get('brand', {})
+        brand = client.get('brand') or {}
         main_product = brand.get('main_product', {})
         current_earnings = 0
         if main_product.get('product_id'):
@@ -1533,7 +1651,7 @@ def api_get_weekly_posts():
             }
         
         # Get default schedule from brand settings
-        brand = client.get('brand', {})
+        brand = client.get('brand') or {}
         default_schedule = brand.get('default_schedule', {})
         newsletter_default_time = default_schedule.get('newsletter_time', '09:00')
         newsletter_default_day = default_schedule.get('newsletter_day', 'friday')
@@ -2204,6 +2322,406 @@ def api_update_brand(client_id):
         
         return jsonify({"brand": data['clients'][client_index]['brand']})
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/clients/<client_id>/brand/identity', methods=['GET'])
+@require_auth
+def api_get_brand_identity(client_id):
+    """Get brand identity data for a client"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        # Try Supabase first
+        try:
+            from content.supabase_storage import load_clients_from_supabase
+            clients = load_clients_from_supabase(user_id=user['id'])
+            for client in clients:
+                if client.get('client_id') == client_id:
+                    brand = client.get('brand') or {}
+                    identity = brand.get('identity', {})
+                    return jsonify({"identity": identity})
+        except Exception as e:
+            print(f"⚠️ Supabase lookup failed: {e}")
+        
+        # Fallback to JSON file
+        try:
+            with open('clients.json', 'r') as f:
+                data = json.load(f)
+            
+            for client in data.get('clients', []):
+                if client.get('client_id') == client_id:
+                    brand = client.get('brand') or {}
+                    identity = brand.get('identity', {})
+                    return jsonify({"identity": identity})
+        except FileNotFoundError:
+            pass
+        
+        return jsonify({"identity": {}})
+    except Exception as e:
+        print(f"❌ Error getting brand identity: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/clients/<client_id>/brand/identity', methods=['PUT'])
+@require_auth
+def api_update_brand_identity(client_id):
+    """Update brand identity data for a client"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        identity_data = request.json.get('identity', {})
+        
+        # Try Supabase first
+        try:
+            from content.supabase_storage import load_clients_from_supabase, save_client_to_supabase
+            clients = load_clients_from_supabase(user_id=user['id'])
+            for client in clients:
+                if client.get('client_id') == client_id:
+                    if 'brand' not in client:
+                        client['brand'] = {}
+                    client['brand']['identity'] = identity_data
+                    if save_client_to_supabase(client):
+                        return jsonify({"identity": identity_data})
+                    break
+        except Exception as e:
+            print(f"⚠️ Supabase update failed: {e}")
+        
+        # Fallback to JSON file
+        try:
+            with open('clients.json', 'r') as f:
+                data = json.load(f)
+            
+            client_index = None
+            for i, c in enumerate(data.get('clients', [])):
+                if c.get('client_id') == client_id:
+                    client_index = i
+                    break
+            
+            if client_index is None:
+                return jsonify({"error": "Client not found"}), 404
+            
+            if 'brand' not in data['clients'][client_index]:
+                data['clients'][client_index]['brand'] = {}
+            
+            data['clients'][client_index]['brand']['identity'] = identity_data
+            
+            with open('clients.json', 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            return jsonify({"identity": identity_data})
+        except FileNotFoundError:
+            return jsonify({"error": "clients.json not found"}), 500
+        except Exception as e:
+            print(f"❌ Error updating brand identity: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        print(f"❌ Error updating brand identity: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/clients/<client_id>/brand/upload', methods=['POST'])
+@require_auth
+def api_upload_brand_asset(client_id):
+    """Upload brand assets (logos, visuals) for a client"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Get upload type (logo or visual)
+        upload_type = request.form.get('type', 'visual')
+        
+        # Create directory for brand assets
+        upload_dir = f'web/assets/brand/{client_id}'
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename
+        from werkzeug.utils import secure_filename
+        import uuid
+        file_ext = os.path.splitext(file.filename)[1]
+        filename = f"{upload_type}_{uuid.uuid4().hex[:8]}{file_ext}"
+        filepath = os.path.join(upload_dir, filename)
+        
+        # Save file
+        file.save(filepath)
+        
+        # Return URL
+        url = f"/web/assets/brand/{client_id}/{filename}"
+        
+        return jsonify({"url": url, "filename": filename})
+    except Exception as e:
+        print(f"❌ Error uploading brand asset: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+# ==================== BRAND PERSONA ONBOARDING ====================
+
+@app.route('/onboarding')
+@require_auth
+def onboarding_page():
+    """Brand persona onboarding page"""
+    return send_file('web/templates/brand_persona_onboarding.html')
+
+@app.route('/api/onboarding/<client_id>/start', methods=['POST'])
+@require_auth
+def api_start_onboarding(client_id):
+    """Start a new brand persona interview session"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        # Get mode from request (quick, extended, or full)
+        data = request.json or {}
+        mode = data.get('mode', 'quick')  # Default to quick mode
+        
+        # Get client name
+        client_name = None
+        try:
+            from content.supabase_storage import load_clients_from_supabase
+            clients = load_clients_from_supabase(user_id=user['id'])
+            for client in clients:
+                if client.get('client_id') == client_id:
+                    client_name = client.get('name', 'this brand')
+                    break
+        except Exception:
+            pass
+        
+        # Start interview session
+        from content.persona_interview import get_interview_manager
+        interview_manager = get_interview_manager()
+        session_id = interview_manager.start_interview(client_id, client_name, mode=mode)
+        
+        return jsonify({"session_id": session_id, "mode": mode})
+    except Exception as e:
+        print(f"❌ Error starting onboarding: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/onboarding/<client_id>/question', methods=['GET'])
+@require_auth
+def api_get_question(client_id):
+    """Get the next question in the interview"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        session_id = request.args.get('session_id')
+        if not session_id:
+            return jsonify({"error": "session_id required"}), 400
+        
+        # Get next question
+        from content.persona_interview import get_interview_manager
+        interview_manager = get_interview_manager()
+        result = interview_manager.get_next_question(session_id)
+        
+        if result is None:
+            return jsonify({"error": "Invalid session"}), 404
+        
+        if result.get("error"):
+            return jsonify({"error": result["error"]}), 500
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"❌ Error getting question: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/onboarding/<client_id>/answer', methods=['POST'])
+@require_auth
+def api_submit_answer(client_id):
+    """Submit an answer to the current question"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        data = request.json
+        session_id = data.get('session_id')
+        answer = data.get('answer', '')
+        
+        if not session_id:
+            return jsonify({"error": "session_id required"}), 400
+        
+        # Submit answer
+        from content.persona_interview import get_interview_manager
+        interview_manager = get_interview_manager()
+        success = interview_manager.submit_answer(session_id, answer)
+        
+        if not success:
+            return jsonify({"error": "Invalid session"}), 404
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"❌ Error submitting answer: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/onboarding/<client_id>/complete', methods=['GET'])
+@require_auth
+def api_complete_interview(client_id):
+    """Complete the interview and generate persona document"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        session_id = request.args.get('session_id')
+        if not session_id:
+            return jsonify({"error": "session_id required"}), 400
+        
+        # Complete interview
+        from content.persona_interview import get_interview_manager
+        interview_manager = get_interview_manager()
+        persona_document = interview_manager.complete_interview(session_id)
+        
+        if persona_document is None:
+            return jsonify({"error": "Failed to generate persona document"}), 500
+        
+        return jsonify({"persona": persona_document})
+    except Exception as e:
+        print(f"❌ Error completing interview: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/onboarding/<client_id>/save', methods=['POST'])
+@require_auth
+def api_save_persona(client_id):
+    """Save the persona document to the brand configuration"""
+    try:
+        user = getattr(request, 'current_user', None)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        
+        # Verify user has access to this client
+        from content.supabase_storage import get_user_client_role
+        role = get_user_client_role(user['id'], client_id)
+        if not role:
+            return jsonify({"error": "Access denied to this project"}), 403
+        
+        data = request.json
+        persona_document = data.get('persona', '')
+        
+        if not persona_document:
+            return jsonify({"error": "Persona document required"}), 400
+        
+        # Save to brand.persona field
+        try:
+            from content.supabase_storage import load_clients_from_supabase, save_client_to_supabase
+            clients = load_clients_from_supabase(user_id=user['id'])
+            for client in clients:
+                if client.get('client_id') == client_id:
+                    if 'brand' not in client:
+                        client['brand'] = {}
+                    client['brand']['persona'] = persona_document
+                    client['brand']['persona_completed'] = True
+                    client['brand']['persona_completed_at'] = datetime.now().isoformat()
+                    
+                    if save_client_to_supabase(client):
+                        return jsonify({"success": True, "persona": persona_document})
+                    break
+        except Exception as e:
+            print(f"⚠️ Supabase save failed: {e}")
+        
+        # Fallback to JSON file
+        try:
+            with open('clients.json', 'r') as f:
+                data = json.load(f)
+            
+            client_index = None
+            for i, c in enumerate(data.get('clients', [])):
+                if c.get('client_id') == client_id:
+                    client_index = i
+                    break
+            
+            if client_index is None:
+                return jsonify({"error": "Client not found"}), 404
+            
+            if 'brand' not in data['clients'][client_index]:
+                data['clients'][client_index]['brand'] = {}
+            
+            data['clients'][client_index]['brand']['persona'] = persona_document
+            data['clients'][client_index]['brand']['persona_completed'] = True
+            data['clients'][client_index]['brand']['persona_completed_at'] = datetime.now().isoformat()
+            
+            with open('clients.json', 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            return jsonify({"success": True, "persona": persona_document})
+        except FileNotFoundError:
+            return jsonify({"error": "clients.json not found"}), 404
+        except Exception as e:
+            print(f"❌ Error saving persona: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        print(f"❌ Error saving persona: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # Export app for Vercel
