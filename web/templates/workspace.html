@@ -317,6 +317,8 @@
             const card = document.createElement('div');
             card.className = 'project-card';
             card.onclick = () => {
+                // Save selected project to localStorage for cross-page persistence
+                localStorage.setItem('selected_client_id', project.client_id);
                 window.location.href = `/?client_id=${project.client_id}`;
             };
             

@@ -153,20 +153,36 @@
     <script>
         let currentClientId = null;
         
-        // Get client_id from URL query parameter or user's accessible clients
+        // Get client_id from URL, localStorage, or user's accessible clients
         async function determineClientId() {
-            // First, check URL query parameter (from workspace)
+            // First, check URL query parameter
             const urlParams = new URLSearchParams(window.location.search);
-            const clientIdFromUrl = urlParams.get('client_id');
+            let clientIdFromUrl = urlParams.get('client_id');
             
             if (clientIdFromUrl) {
                 currentClientId = clientIdFromUrl;
+                localStorage.setItem('selected_client_id', clientIdFromUrl);
                 document.getElementById('client_id').value = clientIdFromUrl;
+                updateNavLinks(clientIdFromUrl);
                 loadPillars();
                 return;
             }
             
-            // Otherwise, get the first accessible client for the user
+            // Check localStorage
+            const storedClientId = localStorage.getItem('selected_client_id');
+            if (storedClientId) {
+                currentClientId = storedClientId;
+                document.getElementById('client_id').value = storedClientId;
+                // Update URL
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('client_id', storedClientId);
+                window.history.replaceState({}, '', newUrl);
+                updateNavLinks(storedClientId);
+                loadPillars();
+                return;
+            }
+            
+            // Otherwise, get from user's accessible clients
             try {
                 const token = sessionStorage.getItem('access_token');
                 const headers = {};
@@ -182,15 +198,20 @@
                 if (response.ok) {
                     const data = await response.json();
                     const clients = data.clients || [];
-                    if (clients.length > 0) {
-                        // Use the first accessible client
+                    if (clients.length === 1) {
+                        // Auto-select the only client
                         currentClientId = clients[0].client_id;
+                        localStorage.setItem('selected_client_id', currentClientId);
                         document.getElementById('client_id').value = currentClientId;
+                        updateNavLinks(currentClientId);
                         loadPillars();
-                    } else {
-                        console.error('No clients accessible');
+                    } else if (clients.length > 1) {
+                        // Multiple clients - redirect to workspace to select
                         document.getElementById('status-message').innerHTML = 
-                            '<p style="color: #f87171;">No projects accessible. Please contact an administrator.</p>';
+                            '<p style="color: #a8b2d1;">Please <a href="/workspace" style="color: #a855f7;">select a project</a> from your workspace first.</p>';
+                    } else {
+                        document.getElementById('status-message').innerHTML = 
+                            '<p style="color: #f87171;">No projects found. <a href="/workspace" style="color: #a855f7;">Create a project</a> first.</p>';
                     }
                 } else {
                     console.error('Error loading clients:', response.status);
@@ -198,6 +219,18 @@
             } catch (error) {
                 console.error('Error determining client:', error);
             }
+        }
+        
+        // Update navigation links to include client_id
+        function updateNavLinks(clientId) {
+            if (!clientId) return;
+            document.querySelectorAll('a.ghost-button, a.glass-button').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('#') && !href.includes('client_id')) {
+                    const separator = href.includes('?') ? '&' : '?';
+                    link.setAttribute('href', `${href}${separator}client_id=${clientId}`);
+                }
+            });
         }
         
         async function loadPillars() {

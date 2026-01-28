@@ -538,9 +538,11 @@
                 console.log('Post has center_post:', !!post.center_post);
                 console.log('Post status:', post.status);
                 
-                // Load client name for navigation
+                // Save client_id to localStorage and update navigation
                 if (post.client_id) {
+                    localStorage.setItem('selected_client_id', post.client_id);
                     loadClientName(post.client_id);
+                    updateNavLinks(post.client_id);
                 }
                 
                 if (!post) {
@@ -1395,6 +1397,18 @@
             } catch (error) {
                 console.error('Error loading client name:', error);
             }
+        }
+        
+        // Update navigation links to include client_id
+        function updateNavLinks(clientId) {
+            if (!clientId) return;
+            document.querySelectorAll('a.ghost-button, a.glass-button').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('#') && !href.includes('client_id')) {
+                    const separator = href.includes('?') ? '&' : '?';
+                    link.setAttribute('href', `${href}${separator}client_id=${clientId}`);
+                }
+            });
         }
         
         // Load user profile picture

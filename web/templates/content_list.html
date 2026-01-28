@@ -29,7 +29,7 @@
                 <a href="/product" class="ghost-button">Product</a>
                 <a href="/brand" class="ghost-button">Brand Identity</a>
                 <a href="/settings" class="ghost-button">Settings</a>
-                <a href="/content/create" class="glass-button">+ New Post</a>
+                <a href="/content/create" id="new-post-link" class="glass-button">+ New Post</a>
                 <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
             </div>
         </header>
@@ -106,6 +106,31 @@
         let allPillars = [];
         let currentStatusFilter = 'all';
         let currentCategoryFilter = 'all';
+        let currentClientId = null;
+        
+        // Get client_id from URL or localStorage
+        function getClientId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let clientId = urlParams.get('client_id');
+            
+            if (clientId) {
+                // Save to localStorage for persistence
+                localStorage.setItem('selected_client_id', clientId);
+                return clientId;
+            }
+            
+            // Try localStorage
+            clientId = localStorage.getItem('selected_client_id');
+            if (clientId) {
+                // Update URL to include client_id
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('client_id', clientId);
+                window.history.replaceState({}, '', newUrl);
+                return clientId;
+            }
+            
+            return null;
+        }
         
         // Filter posts by status
         function filterByStatus(status) {
@@ -211,7 +236,10 @@
         // Load pillars and create filter buttons
         async function loadPillars() {
             try {
-                const response = await fetch('/api/content/pillars');
+                const url = currentClientId 
+                    ? `/api/content/pillars?client_id=${currentClientId}`
+                    : '/api/content/pillars';
+                const response = await fetch(url);
                 const data = await response.json();
                 allPillars = data.pillars || [];
                 
@@ -233,7 +261,10 @@
         // Load posts on page load
         async function loadPosts() {
             try {
-                const response = await fetch('/api/content/posts');
+                const url = currentClientId 
+                    ? `/api/content/posts?client_id=${currentClientId}`
+                    : '/api/content/posts';
+                const response = await fetch(url);
                 const data = await response.json();
                 const posts = data.posts || [];
                 
@@ -259,9 +290,78 @@
             }
         }
         
-        // Load both pillars and posts
-        loadPillars();
-        loadPosts();
+        // Initialize client_id and update navigation links
+        function initializeClientContext() {
+            currentClientId = getClientId();
+            
+            // Update navigation links to include client_id
+            if (currentClientId) {
+                document.querySelectorAll('a.ghost-button, a.glass-button').forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && !href.startsWith('#') && !href.includes('client_id')) {
+                        const separator = href.includes('?') ? '&' : '?';
+                        link.setAttribute('href', `${href}${separator}client_id=${currentClientId}`);
+                    }
+                });
+            }
+            
+            // If no client_id, redirect to workspace to select a project
+            if (!currentClientId) {
+                // Check if user has clients first
+                checkClientAccess();
+            } else {
+                loadPillars();
+                loadPosts();
+            }
+        }
+        
+        // Check if user has access to any clients
+        async function checkClientAccess() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const clients = data.clients || [];
+                    
+                    if (clients.length === 0) {
+                        document.getElementById('posts-list').innerHTML = 
+                            '<p style="color: #a8b2d1;">No projects found. <a href="/workspace" style="color: #a855f7;">Go to Workspace</a> to create a project first.</p>';
+                        return;
+                    }
+                    
+                    if (clients.length === 1) {
+                        // Auto-select the only client
+                        currentClientId = clients[0].client_id;
+                        localStorage.setItem('selected_client_id', currentClientId);
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('client_id', currentClientId);
+                        window.history.replaceState({}, '', newUrl);
+                        initializeClientContext(); // Re-initialize with client
+                    } else {
+                        // Multiple clients - prompt to select
+                        document.getElementById('posts-list').innerHTML = 
+                            '<p style="color: #a8b2d1;">Please <a href="/workspace" style="color: #a855f7;">select a project</a> from your workspace first.</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking client access:', error);
+                loadPillars();
+                loadPosts();
+            }
+        }
+        
+        // Initialize
+        initializeClientContext();
         
         // Noise canvas (same as dashboard)
         (function() {
@@ -314,8 +414,8 @@
                     }
                     // Load user profile picture if available
                     loadUserProfilePicture(data.user);
-                    // Load first client name if available
-                    loadFirstClientName();
+                    // Load client name if available
+                    loadClientName();
                 }
             } catch (error) {
                 console.error('Auth check failed:', error);
@@ -337,8 +437,10 @@
         }
 
         // Load client name for navigation
-        async function loadFirstClientName() {
+        async function loadClientName() {
             try {
+                if (!currentClientId) return;
+                
                 const token = sessionStorage.getItem('access_token');
                 const headers = {};
                 if (token) {
@@ -352,7 +454,7 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const client = data.clients?.[0];
+                    const client = data.clients?.find(c => c.client_id === currentClientId);
                     const projectNameEl = document.getElementById('project-name');
                     if (projectNameEl && client) {
                         projectNameEl.textContent = client.name || 'Project';
