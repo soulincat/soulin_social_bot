@@ -57,9 +57,9 @@ class ClaudeClient:
             client_config: Client configuration dict
             cta_info: Optional dict with 'text' and 'url' for CTA to include
         """
-        business = client_config.get('business', {})
-        funnel = client_config.get('funnel_structure', {})
-        brand = client_config.get('brand', {})
+        business = client_config.get('business') or {}
+        funnel = client_config.get('funnel_structure') or {}
+        brand = client_config.get('brand') or {}
         
         # Build brand context section
         brand_context = ""
@@ -71,7 +71,7 @@ class ClaudeClient:
                 # Use the comprehensive persona document from onboarding
                 brand_context = f"\n\nBRAND PERSONA DOCUMENT:\n{persona_document}\n\n"
                 brand_context += "CRITICAL: Read the persona document above carefully. This is the complete brand voice profile. "
-                brand_context += "Follow the guidelines, avoid the "Never" items, and match the writing style described. "
+                brand_context += "Follow the guidelines, avoid the 'Never' items, and match the writing style described. "
                 brand_context += "Apply the persona with judgment, not rigidly - let it guide your writing naturally.\n"
             else:
                 # Fallback to legacy brand settings if persona not available
@@ -466,7 +466,7 @@ Return JSON format:
         
         # Add persona context if available
         persona_context = ""
-        if brand_config and brand_config.get('brand', {}).get('persona'):
+        if brand_config and (brand_config.get('brand') or {}).get('persona'):
             persona_context = f"\n\nBRAND PERSONA:\n{brand_config['brand']['persona']}\n\n"
             persona_context += "CRITICAL: Follow the brand persona document above. Match the voice, tone, and style. "
             persona_context += "Avoid the 'Never' items listed in the persona. Apply naturally, not rigidly.\n"

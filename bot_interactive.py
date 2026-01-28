@@ -303,15 +303,15 @@ async def content_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 auto_expand=True
             )
             
-            title = post.get('center_post', {}).get('title', 'Untitled')
-            checks = post.get('center_post', {}).get('checks', {})
+            title = (post.get('center_post') or {}).get('title', 'Untitled')
+            checks = (post.get('center_post') or {}).get('checks', {})
             passed = sum(1 for v in checks.values() if v)
             total = len(checks)
             
             message = f"✅ **Post Created!**\n\n"
             message += f"**{title}**\n\n"
             message += f"Validation: {passed}/{total} checks passed\n"
-            message += f"Word count: {post.get('center_post', {}).get('word_count', 0)}\n\n"
+            message += f"Word count: {(post.get('center_post') or {}).get('word_count', 0)}\n\n"
             message += f"Post ID: `{post['id']}`\n\n"
             message += f"View on web: {WEB_DASHBOARD_URL}/content/{post['id']}"
             
@@ -349,7 +349,7 @@ async def content_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message = f"📝 **Your Content Posts** ({len(posts)})\n\n"
             
             for post in posts[:10]:  # Show first 10
-                title = post.get('center_post', {}).get('title') or post.get('raw_idea', 'Untitled')[:50]
+                title = (post.get('center_post') or {}).get('title') or post.get('raw_idea', 'Untitled')[:50]
                 status = post.get('status', 'draft')
                 message += f"• {title}\n"
                 message += f"  Status: {status} | ID: `{post['id']}`\n\n"

@@ -153,12 +153,12 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
                     clients_data = json.load(f)
                     for client in clients_data.get('clients', []):
                         if client.get('client_id') == client_id:
-                            brand_socials = client.get('brand', {}).get('socials', {})
+                            brand_socials = (client.get('brand') or {}).get('socials', {})
                             # Store full brand config for persona access
-                            brand_config = {'brand': client.get('brand', {})}
+                            brand_config = {'brand': client.get('brand') or {}}
                             # Get CTA info if post has include_cta flag
                             if post.get('include_cta'):
-                                main_product = client.get('brand', {}).get('main_product', {})
+                                main_product = (client.get('brand') or {}).get('main_product', {})
                                 if main_product.get('cta_text') and main_product.get('cta_url'):
                                     cta_info = {
                                         'text': main_product['cta_text'],
@@ -169,8 +169,8 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
             print(f"Warning: Could not load brand social settings: {e}")
     
     # Prefer blog version, fallback to center post
-    source_content = post.get('blog_version', {}).get('content') or \
-                    post.get('center_post', {}).get('content', '')
+    source_content = (post.get('blog_version') or {}).get('content') or \
+                    (post.get('center_post') or {}).get('content', '')
     
     if not source_content:
         raise ValueError("Post must have content to generate derivatives")
@@ -194,7 +194,7 @@ def generate_derivatives(post_id, include_podcast=False, platforms=None, client_
                     "type": "newsletter",
                     "content": source_content,  # Use center post as newsletter
                     "metadata": {
-                        "subject": post.get('center_post', {}).get('title', ''),
+                        "subject": (post.get('center_post') or {}).get('title', ''),
                         "platform": "beehiiv",
                         "status": "draft"
                     },
@@ -428,7 +428,7 @@ def get_derivatives(post_id=None, status=None):
     
     # Additional filtering by status if needed
     if status:
-        derivatives = [d for d in derivatives if d.get('metadata', {}).get('status') == status]
+        derivatives = [d for d in derivatives if (d.get('metadata') or {}).get('status') == status]
     
     return derivatives
 

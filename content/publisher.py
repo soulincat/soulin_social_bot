@@ -47,7 +47,7 @@ def schedule_derivatives(post_id, schedule_config):
             if base_time:
                 from datetime import datetime, timedelta
                 base_dt = datetime.fromisoformat(base_time.replace('Z', '+00:00'))
-                post_num = derivative.get('metadata', {}).get('post_number', 1)
+                post_num = (derivative.get('metadata') or {}).get('post_number', 1)
                 stagger_hours = schedule_config.get('social_stagger_hours', 24)
                 scheduled_dt = base_dt + timedelta(hours=(post_num - 1) * stagger_hours)
                 scheduled_time = scheduled_dt.isoformat()
@@ -395,7 +395,7 @@ def publish_queued_derivatives():
     errors = []
     
     for derivative in data['derivatives']:
-        status = derivative.get('metadata', {}).get('status')
+        status = (derivative.get('metadata') or {}).get('status')
         scheduled_for = derivative.get('scheduled_for')
         
         if status == 'queued' and scheduled_for:
@@ -428,7 +428,7 @@ def publish_queued_derivatives():
                         elif deriv_type == 'telegram' and chat_id:
                             result = publish_to_telegram(derivative, chat_id)
                         elif deriv_type.startswith('social_'):
-                            platform = derivative.get('metadata', {}).get('platform', 'unknown')
+                            platform = (derivative.get('metadata') or {}).get('platform', 'unknown')
                             result = publish_to_social(derivative, platform)
                         else:
                             result = {'success': False, 'message': 'Unknown derivative type'}

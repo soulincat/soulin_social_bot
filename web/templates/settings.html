@@ -196,7 +196,7 @@
         }
     </style>
 </head>
-<body>
+<body style="position: relative; min-height: 100vh; padding-bottom: 3rem;">
     <canvas id="noise-canvas"></canvas>
     <main>
         <header class="app-header">
@@ -214,6 +214,7 @@
                 <a href="/" class="ghost-button">Dashboard</a>
                 <a href="/content" class="ghost-button">Posts</a>
                 <a href="/product" class="ghost-button">Product</a>
+                <a href="/brand" class="ghost-button">Brand Identity</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="/content/create" class="glass-button">+ New Post</a>
                 <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
@@ -986,6 +987,12 @@
 
         checkAuth();
     </script>
+    
+    <footer style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); text-align: center; padding: 1rem; color: rgba(168, 178, 209, 0.6); font-size: 0.875rem; pointer-events: none; width: 100%;">
+        <p style="margin: 0;">
+            Built by <a href="https://soulin.co" target="_blank" rel="noopener noreferrer" style="color: #203EAE; text-decoration: none; transition: color 0.2s ease; pointer-events: auto;">©SOULIN</a>
+        </p>
+    </footer>
 </body>
 </html>
 

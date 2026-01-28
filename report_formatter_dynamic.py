@@ -506,7 +506,7 @@ def format_content_performance(client_id):
         if recent_posts:
             section += f"\nRecent Posts: {len(recent_posts)}\n"
             for post in recent_posts[:3]:
-                title = post.get('center_post', {}).get('title') or post.get('raw_idea', 'Untitled')[:40]
+                title = (post.get('center_post') or {}).get('title') or post.get('raw_idea', 'Untitled')[:40]
                 section += f"• {title}\n"
         
         return section

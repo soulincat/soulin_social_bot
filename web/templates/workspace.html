@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/web/styles/dashboard.css">
 </head>
-<body>
+<body style="position: relative; min-height: 100vh; padding-bottom: 3rem;">
     <canvas id="noise-canvas"></canvas>
     <main>
         <header class="app-header">
@@ -25,6 +25,7 @@
             <div class="nav-actions">
                 <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
                 <a href="/content" class="ghost-button">Posts</a>
+                <a href="/brand" class="ghost-button">Brand Identity</a>
                 <a href="/settings" class="ghost-button">Settings</a>
                 <a href="#" id="new-post-link" class="glass-button">+ New Post</a>
                 <button id="logout-btn" class="ghost-button" onclick="handleLogout()">Logout</button>
@@ -40,7 +41,10 @@
         </section>
 
         <section class="glass-card" id="projects-section">
-            <div class="panel-title">Projects</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div class="panel-title" style="margin: 0;">Projects</div>
+                <button class="glass-button" onclick="showCreateProjectModal()" style="margin: 0;">+ New Project</button>
+            </div>
             <div id="projects-grid" class="projects-grid">
                 <div class="loading-skeleton">
                     <div class="skeleton-card"></div>
@@ -240,12 +244,15 @@
                     currentUser = data.user;
                     // Load user profile picture if available
                     loadUserProfilePicture(currentUser);
+                    return true;
                 } else {
                     window.location.href = '/login';
+                    return false;
                 }
             } catch (error) {
                 console.error('Auth check failed:', error);
                 window.location.href = '/login';
+                return false;
             }
         }
 
@@ -343,6 +350,9 @@
                         <div class="metric-value">${formatCurrency(project.revenue)}</div>
                     </div>
                 </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <a href="/brand?client_id=${project.client_id}" class="ghost-button" style="width: 100%; text-align: center; font-size: 0.85rem; padding: 0.5rem;" onclick="event.stopPropagation();">Brand Identity</a>
+                </div>
             `;
             
             return card;
@@ -385,9 +395,11 @@
 
         let projects = [];
         
-        // Initialize
-        checkAuth().then(() => {
-            loadProjects();
+        // Initialize on page load
+        checkAuth().then((authenticated) => {
+            if (authenticated) {
+                loadProjects();
+            }
         });
 
         // Initialize noise canvas (from dashboard)
@@ -420,8 +432,90 @@
             profilePicEl.src = defaultPic;
         }
 
-        checkAuth();
+        // Create project modal
+        function showCreateProjectModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(8px);';
+            modal.innerHTML = `
+                <div style="background: rgba(3, 7, 18, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%;">
+                    <h2 style="margin: 0 0 1.5rem 0; color: #ffffff;">Create New Project</h2>
+                    <form id="create-project-form">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: #ffffff; font-weight: 500;">Project Name</label>
+                            <input type="text" id="project-name-input" required style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; color: #ffffff; font-family: inherit; font-size: 0.95rem;" placeholder="Enter project name">
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" class="ghost-button" style="margin: 0;">Cancel</button>
+                            <button type="submit" class="glass-button" style="margin: 0;">Create Project</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('#create-project-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const projectName = document.getElementById('project-name-input').value.trim();
+                if (!projectName) {
+                    alert('Please enter a project name');
+                    return;
+                }
+                
+                try {
+                    const token = sessionStorage.getItem('access_token');
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    
+                    const response = await fetch('/api/clients', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ name: projectName }),
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        modal.remove();
+                        // Clear cache and reload projects
+                        try {
+                            await fetch('/api/workspace/cache/clear', {
+                                method: 'POST',
+                                headers: headers,
+                                credentials: 'include'
+                            });
+                        } catch (e) {
+                            console.log('Cache clear failed (non-critical):', e);
+                        }
+                        // Reload projects
+                        await loadProjects();
+                        alert('Project created successfully!');
+                    } else {
+                        const errorData = await response.json();
+                        alert(`Error: ${errorData.error || 'Failed to create project'}`);
+                    }
+                } catch (error) {
+                    console.error('Error creating project:', error);
+                    alert('Error creating project');
+                }
+            });
+            
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('project-name-input').focus();
+            }, 100);
+        }
+
     </script>
+    
+    <footer style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); text-align: center; padding: 1rem; color: rgba(168, 178, 209, 0.6); font-size: 0.875rem; pointer-events: none; width: 100%;">
+        <p style="margin: 0;">
+            Built by <a href="https://soulin.co" target="_blank" rel="noopener noreferrer" style="color: #203EAE; text-decoration: none; transition: color 0.2s ease; pointer-events: auto;">©SOULIN</a>
+        </p>
+    </footer>
 </body>
 </html>
 

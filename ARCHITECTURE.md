@@ -237,3 +237,4 @@ soulin_social_bot/
 
 This is a **traditional web application** architecture, not a modern SPA (Single Page Application). It's simpler, faster to develop, and perfectly suited for this use case.
 
+

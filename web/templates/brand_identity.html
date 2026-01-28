@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Identity - Soul in Social</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/web/styles/dashboard.css">
+    <style>
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .label-help {
+            font-size: 0.75rem;
+            color: #a8b2d1;
+            font-weight: normal;
+            margin-top: 0.25rem;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .logo-upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .logo-preview {
+            width: 100%;
+            min-height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .logo-preview.has-image {
+            border-style: solid;
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .color-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .color-swatch {
+            width: 100%;
+            height: 80px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+        .color-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .color-input-group input {
+            flex: 1;
+        }
+        .color-remove {
+            padding: 0.5rem;
+            background: rgba(248, 113, 113, 0.2);
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            border-radius: 8px;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .color-remove:hover {
+            background: rgba(248, 113, 113, 0.3);
+        }
+        .add-color-btn {
+            padding: 1rem;
+            background: rgba(168, 85, 247, 0.2);
+            border: 2px dashed rgba(168, 85, 247, 0.4);
+            border-radius: 12px;
+            color: #c084fc;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .add-color-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: rgba(168, 85, 247, 0.6);
+        }
+        .typography-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .visual-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .visual-item {
+            position: relative;
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .visual-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .visual-remove {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .visual-remove:hover {
+            background: rgba(248, 113, 113, 0.8);
+            color: #fff;
+        }
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .upload-zone:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            background: rgba(168, 85, 247, 0.1);
+        }
+        .form-section {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .form-section:last-child {
+            border-bottom: none;
+        }
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+        }
+        .btn-save {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4);
+        }
+        .btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body style="position: relative; min-height: 100vh; padding-bottom: 3rem;">
+    <canvas id="noise-canvas"></canvas>
+    <main>
+        <header class="app-header">
+            <div class="brand-mark">
+                <div class="logo-glyph">
+                    <img id="user-profile-pic" src="/web/assets/default-avatar.png" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(168, 85, 247, 0.3);" onerror="this.style.display='none'; this.parentElement.innerHTML='☾';">
+                </div>
+                <div>
+                    <p class="pill-badge" id="project-name">Project</p>
+                    <h1>Brand Identity</h1>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <a href="/workspace" class="ghost-button" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Workspace</a>
+                <a href="/" class="ghost-button">Dashboard</a>
+                <a href="/content" class="ghost-button">Posts</a>
+                <a href="/product" class="ghost-button">Product</a>
+                <a href="/settings" class="ghost-button">Settings</a>
+                <a href="/content/create" class="glass-button">+ New Post</a>
+                <button id="logout-btn" class="ghost-button" onclick="handleLogout()" style="display: none;">Logout</button>
+            </div>
+        </header>
+
+        <section class="glass-card" style="max-width: 1200px; margin: 0 auto;">
+            <div class="panel-title">Brand Identity Guide</div>
+            <p style="color: #a8b2d1; margin-bottom: 2rem;">Manage your brand assets including logos, colors, typography, and visual examples.</p>
+            
+            <!-- Project Selector (shown when no client_id) -->
+            <div id="project-selector-section" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+                <label for="project-select" style="display: block; margin-bottom: 0.75rem; color: #ffffff; font-weight: 500;">Select Project</label>
+                <select id="project-select" style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; color: #ffffff; font-family: inherit; font-size: 0.95rem;">
+                    <option value="">-- Select a project --</option>
+                </select>
+                <p style="color: #a8b2d1; font-size: 0.85rem; margin-top: 0.5rem;">Choose a project to manage its brand identity, or <a href="/workspace" style="color: #a855f7; text-decoration: none;">create a new project</a> first.</p>
+            </div>
+            
+            <form id="brand-identity-form" style="display: none;">
+                <!-- Logo Marks Section -->
+                <div class="form-section">
+                    <div class="form-section-title">Logo Marks</div>
+                    <div class="logo-upload-section">
+                        <div class="form-group">
+                            <label>Primary Logo</label>
+                            <div class="logo-preview" id="primary-logo-preview">
+                                <span style="color: #a8b2d1;">No logo uploaded</span>
+                            </div>
+                            <input type="file" id="primary-logo-input" accept="image/*" style="margin-top: 1rem;">
+                        </div>
+                        <div class="form-group">
+                            <label>Alternative Logo</label>
+                            <div class="logo-preview" id="alternative-logo-preview">
+                                <span style="color: #a8b2d1;">No logo uploaded</span>
+                            </div>
+                            <input type="file" id="alternative-logo-input" accept="image/*" style="margin-top: 1rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color Palette Section -->
+                <div class="form-section">
+                    <div class="form-section-title">Color Palette</div>
+                    <div class="color-palette" id="color-palette">
+                        <!-- Colors will be dynamically added here -->
+                    </div>
+                    <div class="add-color-btn" onclick="addColor()">
+                        + Add Color
+                    </div>
+                </div>
+
+                <!-- Typography Section -->
+                <div class="form-section">
+                    <div class="form-section-title">Typography</div>
+                    <div class="typography-section">
+                        <div class="form-group">
+                            <label for="heading-font">Heading Font</label>
+                            <span class="label-help">Font family for headings and titles</span>
+                            <input type="text" id="heading-font" placeholder="e.g., Tan Variety, Georgia, serif">
+                        </div>
+                        <div class="form-group">
+                            <label for="body-font">Body Font</label>
+                            <span class="label-help">Font family for body text</span>
+                            <input type="text" id="body-font" placeholder="e.g., Proxima Nova, Inter, sans-serif">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Examples Section -->
+                <div class="form-section">
+                    <div class="form-section-title">Visual Examples</div>
+                    <div class="visual-gallery" id="visual-gallery">
+                        <!-- Visual items will be dynamically added here -->
+                    </div>
+                    <div class="upload-zone" onclick="document.getElementById('visual-upload-input').click()">
+                        <p style="color: #a8b2d1; margin: 0;">Click to upload visual examples or drag and drop</p>
+                        <input type="file" id="visual-upload-input" accept="image/*" multiple style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div style="margin-top: 2rem; text-align: center;">
+                    <button type="submit" class="btn-save" id="save-btn">Save Brand Identity</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); text-align: center; padding: 1rem; color: rgba(168, 178, 209, 0.6); font-size: 0.875rem; pointer-events: none; width: 100%;">
+        <p style="margin: 0;">
+            Built by <a href="https://soulin.co" target="_blank" rel="noopener noreferrer" style="color: #203EAE; text-decoration: none; transition: color 0.2s ease; pointer-events: auto;">©SOULIN</a>
+        </p>
+    </footer>
+
+    <script>
+        let currentClientId = null;
+        let colors = [];
+        let visuals = [];
+
+        // Get client_id from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        currentClientId = urlParams.get('client_id');
+
+        // Load projects for selector
+        async function loadProjectsForSelector() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById('project-select');
+                    const selectorSection = document.getElementById('project-selector-section');
+                    const form = document.getElementById('brand-identity-form');
+                    
+                    if (data.clients && data.clients.length > 0) {
+                        // Clear existing options
+                        select.innerHTML = '<option value="">-- Select a project --</option>';
+                        
+                        // Populate selector
+                        data.clients.forEach(client => {
+                            const option = document.createElement('option');
+                            option.value = client.client_id;
+                            option.textContent = client.name;
+                            if (client.client_id === currentClientId) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                        
+                        // Attach event listener after populating options
+                        attachProjectSelector();
+                        
+                        // If client_id from URL, hide selector and show form
+                        if (currentClientId) {
+                            selectorSection.style.display = 'none';
+                            form.style.display = 'block';
+                            loadBrandIdentity();
+                            loadClientName(currentClientId);
+                        } else {
+                            // Show selector, hide form initially
+                            selectorSection.style.display = 'block';
+                            form.style.display = 'none';
+                        }
+                    } else {
+                        // No projects - show message
+                        selectorSection.innerHTML = `
+                            <p style="color: #a8b2d1; text-align: center; margin: 0;">
+                                No projects found. <a href="/workspace" style="color: #a855f7; text-decoration: none;">Create your first project</a> to get started.
+                            </p>
+                        `;
+                        form.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading clients:', error);
+            }
+        }
+
+        // Handle project selection (attach after DOM is ready)
+        let projectSelectorAttached = false;
+        function attachProjectSelector() {
+            const projectSelect = document.getElementById('project-select');
+            if (projectSelect && !projectSelectorAttached) {
+                projectSelectorAttached = true;
+                projectSelect.addEventListener('change', async (e) => {
+                    const selectedClientId = e.target.value;
+                    if (selectedClientId) {
+                        currentClientId = selectedClientId;
+                        const selectorSection = document.getElementById('project-selector-section');
+                        const form = document.getElementById('brand-identity-form');
+                        
+                        // Hide selector and show form
+                        if (selectorSection) selectorSection.style.display = 'none';
+                        if (form) form.style.display = 'block';
+                        
+                        // Update URL without reload
+                        window.history.pushState({}, '', `/brand?client_id=${selectedClientId}`);
+                        
+                        // Load brand identity for selected project
+                        await loadBrandIdentity();
+                        await loadClientName(selectedClientId);
+                    } else {
+                        // No project selected - show selector, hide form
+                        const selectorSection = document.getElementById('project-selector-section');
+                        const form = document.getElementById('brand-identity-form');
+                        if (selectorSection) selectorSection.style.display = 'block';
+                        if (form) form.style.display = 'none';
+                        currentClientId = null;
+                    }
+                });
+            }
+        }
+
+        // Load brand identity data
+        async function loadBrandIdentity() {
+            if (!currentClientId) return;
+            
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch(`/api/clients/${currentClientId}/brand/identity`, {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const identity = data.identity || {};
+                    
+                    // Load logos
+                    if (identity.logos) {
+                        if (identity.logos.primary) {
+                            displayLogo('primary', identity.logos.primary);
+                        }
+                        if (identity.logos.alternative) {
+                            displayLogo('alternative', identity.logos.alternative);
+                        }
+                    }
+                    
+                    // Load colors
+                    if (identity.colors && Array.isArray(identity.colors)) {
+                        colors = identity.colors;
+                        renderColors();
+                    }
+                    
+                    // Load typography
+                    if (identity.typography) {
+                        if (identity.typography.heading) {
+                            document.getElementById('heading-font').value = identity.typography.heading.font || '';
+                        }
+                        if (identity.typography.body) {
+                            document.getElementById('body-font').value = identity.typography.body.font || '';
+                        }
+                    }
+                    
+                    // Load visuals
+                    if (identity.visuals && Array.isArray(identity.visuals)) {
+                        visuals = identity.visuals;
+                        renderVisuals();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading brand identity:', error);
+            }
+        }
+
+        // Logo handling
+        document.getElementById('primary-logo-input').addEventListener('change', async (e) => {
+            await uploadLogo('primary', e.target.files[0]);
+        });
+
+        document.getElementById('alternative-logo-input').addEventListener('change', async (e) => {
+            await uploadLogo('alternative', e.target.files[0]);
+        });
+
+        async function uploadLogo(type, file) {
+            if (!file || !currentClientId) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', type);
+            
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch(`/api/clients/${currentClientId}/brand/upload`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayLogo(type, data.url);
+                } else {
+                    alert('Failed to upload logo');
+                }
+            } catch (error) {
+                console.error('Error uploading logo:', error);
+                alert('Error uploading logo');
+            }
+        }
+
+        function displayLogo(type, url) {
+            const preview = document.getElementById(`${type}-logo-preview`);
+            preview.innerHTML = `<img src="${url}" alt="${type} logo">`;
+            preview.classList.add('has-image');
+        }
+
+        // Color palette handling
+        function addColor() {
+            colors.push({ name: 'New Color', hex: '#FFFFFF' });
+            renderColors();
+        }
+
+        function removeColor(index) {
+            colors.splice(index, 1);
+            renderColors();
+        }
+
+        function renderColors() {
+            const container = document.getElementById('color-palette');
+            container.innerHTML = '';
+            
+            colors.forEach((color, index) => {
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+                colorItem.innerHTML = `
+                    <div class="color-swatch" style="background-color: ${color.hex};" onclick="document.getElementById('color-hex-${index}').focus()"></div>
+                    <input type="text" id="color-name-${index}" value="${color.name}" placeholder="Color name" onchange="updateColor(${index}, 'name', this.value)">
+                    <div class="color-input-group">
+                        <input type="text" id="color-hex-${index}" value="${color.hex}" placeholder="#FFFFFF" onchange="updateColor(${index}, 'hex', this.value)">
+                        <button type="button" class="color-remove" onclick="removeColor(${index})">×</button>
+                    </div>
+                `;
+                container.appendChild(colorItem);
+            });
+        }
+
+        function updateColor(index, field, value) {
+            if (colors[index]) {
+                colors[index][field] = value;
+                if (field === 'hex') {
+                    document.querySelector(`#color-palette .color-item:nth-child(${index + 1}) .color-swatch`).style.backgroundColor = value;
+                }
+            }
+        }
+
+        // Visual examples handling
+        document.getElementById('visual-upload-input').addEventListener('change', async (e) => {
+            for (const file of Array.from(e.target.files)) {
+                await uploadVisual(file);
+            }
+        });
+
+        async function uploadVisual(file) {
+            if (!file || !currentClientId) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'visual');
+            
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch(`/api/clients/${currentClientId}/brand/upload`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    visuals.push(data.url);
+                    renderVisuals();
+                } else {
+                    alert('Failed to upload visual');
+                }
+            } catch (error) {
+                console.error('Error uploading visual:', error);
+                alert('Error uploading visual');
+            }
+        }
+
+        function removeVisual(index) {
+            visuals.splice(index, 1);
+            renderVisuals();
+        }
+
+        function renderVisuals() {
+            const container = document.getElementById('visual-gallery');
+            container.innerHTML = '';
+            
+            visuals.forEach((url, index) => {
+                const visualItem = document.createElement('div');
+                visualItem.className = 'visual-item';
+                visualItem.innerHTML = `
+                    <img src="${url}" alt="Visual example ${index + 1}">
+                    <button type="button" class="visual-remove" onclick="removeVisual(${index})">×</button>
+                `;
+                container.appendChild(visualItem);
+            });
+        }
+
+        // Form submission
+        document.getElementById('brand-identity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentClientId) {
+                alert('Please select a project');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            const identity = {
+                logos: {
+                    primary: document.getElementById('primary-logo-preview').querySelector('img')?.src || null,
+                    alternative: document.getElementById('alternative-logo-preview').querySelector('img')?.src || null
+                },
+                colors: colors,
+                typography: {
+                    heading: {
+                        font: document.getElementById('heading-font').value
+                    },
+                    body: {
+                        font: document.getElementById('body-font').value
+                    }
+                },
+                visuals: visuals
+            };
+            
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch(`/api/clients/${currentClientId}/brand/identity`, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify({ identity }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    alert('Brand identity saved successfully!');
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to save'}`);
+                }
+            } catch (error) {
+                console.error('Error saving brand identity:', error);
+                alert('Error saving brand identity');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Brand Identity';
+            }
+        });
+
+        // Auth functions
+        async function checkAuth() {
+            try {
+                const token = sessionStorage.getItem('access_token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'block';
+                    }
+                    loadUserProfilePicture(data.user);
+                    await loadProjectsForSelector();
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                sessionStorage.removeItem('access_token');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login';
+            }
+        }
+        
+        // Load client name for navigation
+        async function loadClientName(clientId) {
+            if (!clientId) return;
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/clients', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const client = data.clients?.find(c => c.client_id === clientId);
+                    const projectNameEl = document.getElementById('project-name');
+                    if (projectNameEl && client) {
+                        projectNameEl.textContent = client.name || 'Project';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading client name:', error);
+            }
+        }
+        
+        // Load user profile picture
+        async function loadUserProfilePicture(user) {
+            if (!user) return;
+            const profilePicEl = document.getElementById('user-profile-pic');
+            if (!profilePicEl) return;
+            
+            const defaultPic = '/web/assets/default-avatar.png';
+            profilePicEl.src = defaultPic;
+        }
+
+        // Initialize noise canvas
+        const canvas = document.getElementById('noise-canvas');
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const noise = Math.random() * 50;
+                imageData.data[i] = noise;
+                imageData.data[i + 1] = noise;
+                imageData.data[i + 2] = noise;
+                imageData.data[i + 3] = 5;
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
+

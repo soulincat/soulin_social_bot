@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/web/styles/dashboard.css">
 </head>
-<body>
+<body style="position: relative; min-height: 100vh; padding-bottom: 3rem;">
     <canvas id="noise-canvas"></canvas>
     <main style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem;">
         <div class="glass-card" style="max-width: 400px; width: 100%; padding: 2.5rem;">
@@ -145,6 +145,12 @@
             ctx.putImageData(imageData, 0, 0);
         }
     </script>
+    
+    <footer style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); text-align: center; padding: 1rem; color: rgba(168, 178, 209, 0.6); font-size: 0.875rem; pointer-events: none; width: 100%;">
+        <p style="margin: 0;">
+            Built by <a href="https://soulin.co" target="_blank" rel="noopener noreferrer" style="color: #203EAE; text-decoration: none; transition: color 0.2s ease; pointer-events: auto;">©SOULIN</a>
+        </p>
+    </footer>
 </body>
 </html>
 

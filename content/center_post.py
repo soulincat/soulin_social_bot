@@ -157,7 +157,7 @@ def create_center_post(client_id, raw_idea, auto_expand=True, pillar_id=None, in
             # Get main_product CTA if include_cta is True
             cta_info = None
             if include_cta:
-                main_product = client.get('brand', {}).get('main_product', {})
+                main_product = (client.get('brand') or {}).get('main_product', {})
                 if main_product.get('cta_text') and main_product.get('cta_url'):
                     cta_info = {
                         'text': main_product['cta_text'],

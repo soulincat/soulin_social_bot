@@ -568,7 +568,7 @@ def api_approve_derivative(deriv_id):
         for i, d in enumerate(data.get('derivatives', [])):
             if d.get('id') == deriv_id:
                 derivative = d
-                if d.get('metadata', {}).get('status') == 'draft':
+                if (d.get('metadata') or {}).get('status') == 'draft':
                     data['derivatives'][i]['metadata']['status'] = 'approved'
                     save_derivatives(data)
                     return jsonify({"message": "Approved", "derivative": data['derivatives'][i]})
@@ -620,7 +620,7 @@ def api_regenerate_derivative(deriv_id):
         if not post:
             return jsonify({"error": "Post not found"}), 404
         
-        source_content = post.get('center_post', {}).get('content', '')
+        source_content = (post.get('center_post') or {}).get('content', '')
         if not source_content:
             return jsonify({"error": "Post has no content"}), 400
         
@@ -1496,7 +1496,7 @@ def api_get_growth_data():
         current_followers = 0
         
         # Calculate total followers from connected accounts
-        if connected_accounts.get('instagram', {}).get('connected'):
+        if (connected_accounts.get('instagram') or {}).get('connected'):
             try:
                 user_id = connected_accounts['instagram'].get('user_id')
                 access_token = connected_accounts['instagram'].get('access_token') or os.getenv('INSTAGRAM_ACCESS_TOKEN')
@@ -1732,7 +1732,7 @@ def api_get_weekly_posts():
                     
                     # Get main topic (use the most recent post's title)
                     if not main_topic:
-                        center_post = post.get('center_post', {})
+                        center_post = post.get('center_post') or {}
                         main_topic = center_post.get('title', post.get('raw_idea', 'Untitled')[:50])
                         topic_post_id = post.get('id')
                     
@@ -1743,7 +1743,7 @@ def api_get_weekly_posts():
                             continue
                         
                         deriv_type = deriv.get('type')
-                        status = deriv.get('metadata', {}).get('status', deriv.get('status', 'draft'))
+                        status = (deriv.get('metadata') or {}).get('status', deriv.get('status', 'draft'))
                         
                         # Check if queued (scheduled)
                         if status == 'queued' and deriv.get('scheduled_for'):
